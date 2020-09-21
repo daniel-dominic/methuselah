@@ -4,8 +4,8 @@ project(Methuselah)
 
 option(METHUSALAH_BuildExamples "Build the example targets." ON)
 
-set(METHUSALAH_TARGET_NAME "Methusalah")
-set(METHUSALAH_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/")
+set(METHUSALAH_TARGET_NAME "Methuselah")
+set(METHUSALAH_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
 
 add_library(${METHUSALAH_TARGET_NAME} INTERFACE)
 target_include_directories(
@@ -15,5 +15,9 @@ target_include_directories(
 )
 
 if (METHUSALAH_BuildExamples)
-    add_subdirectory(examples)
+    add_subdirectory(src)
 endif()
+
+
+
+
