@@ -50,14 +50,20 @@ T multiplyAll(const std::vector<T>& vec) {
   return std::accumulate(vec.begin(), vec.end(), 1, std::multiplies<T>());
 }
 
+// Expand each dimension out one unit on each extremity,
+// then subtract the size of the resulting shape from the
+// original. This gives you the number of cells needed to
+// pad the grid by one unit.
 size_t determinePadding(const std::vector<size_t>& shape) {
   auto numDims = shape.size();
-  auto size = multiplyAll<size_t>(shape);
-  auto padding = (size_t)std::pow(2, numDims);
-  for (auto dim : shape) {
-    padding += (2*size) / dim;
+  auto expanded = std::vector<size_t>(shape);
+  for (auto i = 0; i < numDims; ++i) {
+    expanded[i] += 2;
   }
-  return padding;
+
+  auto size = multiplyAll<size_t>(shape);
+  auto expandedSize = multiplyAll<size_t>(shape);
+  return expandedSize - size;
 }
 }  // namespace
 
