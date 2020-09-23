@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <memory>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -28,6 +29,7 @@ class Cell {
   Cell() : value(std::make_unique<T>()) {}
 
   T* getValue() { return value.get(); }
+  void setValue(T value) { *value.get() = value; }
 
  private:
   std::unique_ptr<T> value;
@@ -40,37 +42,45 @@ std::vector<short> const VON_NEUMANN_2D_NEIGHBORHOOD{-3, -1, 1, 3};
 std::vector<short> const MOORE_2D_NEIGHBORHOOD{-4, -3, -2, -1, 1, 2, 3, 4};
 std::vector<short> const MOORE_1D_NEIGHBORHOOD{-1, 1};
 
-enum BoundaryConditions { BOUNDED, TOROIDAL };
+enum Boundary { BOUNDED, TOROIDAL };
+
+namespace {  // "Internal" helper functions
+template <typename T>
+T multiplyAll(const std::vector<T>& vec) {
+  return std::accumulate(vec.begin(), vec.end(), 1, std::multiplies<T>());
+}
+
+size_t determinePadding(const std::vector<size_t>& shape) {
+  auto numDims = shape.size();
+  auto size = multiplyAll<size_t>(shape);
+  auto padding = (size_t)std::pow(2, numDims);
+  for (auto dim : shape) {
+    padding += (2*size) / dim;
+  }
+  return padding;
+}
+}  // namespace
 
 template <typename T>
 class Grid {
  public:
-  Grid(size_t size, unsigned short int dimensions,
-       BoundaryConditions boundaryConditions, std::vector<short> neighborhood)
-      : size(size),
-        dimensions(dimensions),
-        boundaryConditions(boundaryConditions),
-        neighborhood(neighborhood),
-  {}
+  Grid(const std::vector<size_t>& shape, Boundary boundary,
+       const std::vector<short>& neighborhood)
+      : shape(shape),
+        size(multiplyAll<size_t>(shape)),
+        padding(determinePadding(shape)),
+        dimensions(shape.size()),
+        boundary(boundary),
+        neighborhood(neighborhood) {}
 
  private:
+  std::vector<size_t> const shape;
   size_t const size;
   size_t const padding;
   unsigned short int const dimensions;
   std::vector<short> const neighborhood;
-  BoundaryConditions const boundaryConditions;
+  Boundary const boundary;
   std::vector<std::unique_ptr<Cell<T>>> cells;
-
-  // static size_t determinePadding(size_t size, short maxNeighborDistance,
-  //                                BoundaryConditions boundaryConditions) {
-  //   switch (boundaryConditions) {
-  //     case Geometry.BOUNDED:
-  //       return (int)(std::pow(2, dimensions)) * ;
-
-  //     default:
-  //       break;
-  //   }
-  // }
 };
 
 }  // namespace methuselah
