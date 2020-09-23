@@ -26,7 +26,7 @@ class Cell {
       : value(std::move(value)), onBorder(onBorder) {}
   Cell(T value, bool onBorder)
       : value(std::make_unique<T>(value)), onBorder(onBorder) {}
-  Cell() : value(std::make_unique<T>()) {}
+  Cell(bool onBorder) : value(std::make_unique<T>()), onBorder(onBorder) {}
 
   T* getValue() { return value.get(); }
   void setValue(T value) { *value.get() = value; }
@@ -71,13 +71,24 @@ template <typename T>
 class Grid {
  public:
   Grid(const std::vector<size_t>& shape, Boundary boundary,
-       const std::vector<short>& neighborhood)
+       const std::vector<short>& neighborhood,
+       unsigned short int maxNeighborDistance = 1)
       : shape(shape),
         size(multiplyAll<size_t>(shape)),
-        padding(determinePadding(shape)),
+        padding(determinePadding(shape) * maxNeighborDistance),
         dimensions(shape.size()),
         boundary(boundary),
-        neighborhood(neighborhood) {}
+        neighborhood(neighborhood) {
+    // Initialize the Grid with padding
+
+    // -- TODO: Convince yourself these calculations are correct on paper
+    unsigned int halfPadding = padding / 2;
+    for (auto i = 0; i < size + padding; ++i) {
+      auto onFirstBorder = i >= halfPadding && i < padding;
+      auto onLastBorder = i >= (size - padding) && i < (size - halfPadding);
+      cells.push_back(std::make_unique<Cell<T>>(onFirstBorder || onLastBorder));
+    }
+  }
 
  private:
   std::vector<size_t> const shape;
