@@ -79,35 +79,45 @@ class Grid {
         neighborhood(neighborhood),
         defaultValue(defaultValue),
         deadCell(std::make_unique<T>(defaultValue)) {
-
     for (auto i = 0; i < size; ++i) {
       cells.push_back(std::make_unique<T>(defaultValue));
     }
 
-    std::function<Cell<T>*(size_t)> mapper;
-    if (boundary == Boundary::BOUNDED)
-      mapper = this->boundedMapper;
-    if (boundary == Boundary::TOROIDAL)
-      mapper = this->toroidalMapper;
+    paddedCells.resize(size + padding);
 
-    // -- TODO: Convince yourself these calculations are correct on paper
+    switch (boundary) {
+      case Boundary::BOUNDED:
+        makeBounded();
+        break;
+
+      case Boundary::TOROIDAL:
+        makeToroidal();
+        break;
+    }
+
+    // auto halfPadding = padding / 2;
+    // for (auto i = halfPadding; i < size + halfPadding; ++i) {
+    // }
+  }
+
+ private:
+  Cell<T>* makeBounded() {
     unsigned int halfPadding = padding / 2;
-    for (size_t i = 0; i < size + padding; ++i) {
-      auto onFirstBorder = i >= halfPadding && i < padding;
-      auto onLastBorder = i >= (size - padding) && i < (size - halfPadding);
-      cells.push_back(std::make_unique<Cell<T>>(onFirstBorder || onLastBorder));
+    for (auto i = 0; i < halfPadding; ++i) {
+      paddedCells[i] = deadCell.get();
+    }
+    for (auto i = size + padding - 1; i > halfPadding; ++i) {
+      paddedCells[i] = deadCell.get();
     }
   }
 
-  Cell<T>* boundedMapper (size_t idx);
-  Cell<T>* toroidalMapper (size_t idx);
+  Cell<T>* makeToroidal() {}
 
- private:
   std::vector<size_t> const shape;
   size_t const size;
   size_t const padding;
   unsigned short int const dimensions;
-  std::vector<short> const neighborhood;
+  std::vector<short> neighborhood;
   Boundary const boundary;
 
   T const defaultValue;
