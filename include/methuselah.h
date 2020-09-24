@@ -1,5 +1,7 @@
 #pragma once
 
+#include <assert.h>
+
 #include <cmath>
 #include <functional>
 #include <memory>
@@ -16,6 +18,12 @@ class NotImplementedException : public std::runtime_error {
  public:
   NotImplementedException(const std::string& arg) : std::runtime_error(arg) {}
   NotImplementedException() : NotImplementedException("") {}
+};
+
+class InvalidOperationException : public std::runtime_error {
+ public:
+  InvalidOperationException(const std::string& arg) : std::runtime_error(arg) {}
+  InvalidOperationException() : InvalidOperationException("") {}
 };
 
 // Cell
@@ -111,9 +119,25 @@ class Grid {
     }
   }
 
-  Cell<T>* makeToroidal() {}
+  Cell<T>* makeToroidal() { throw NotImplementedException(); }
 
-  std::vector<size_t> const shape;
+  size_t getIdx(std::vector<size_t> coordinates) {
+    if (coordinates.size() != dimensions)
+      throw InvalidOperationException(
+          "Coordinate dimensions do not match grid's dimensions.");
+
+    size_t result{0};
+    for (auto i = 0; i < dimensions; ++i) {
+      auto chunk = coordinates[i];
+      for (auto j = 1; j < i; ++j) {
+        chunk *= dimensions[j];
+      }
+      result += chunk;
+    }
+    return result;
+  }
+
+  std::vector<unsigned int> const shape;
   size_t const size;
   size_t const padding;
   unsigned short int const dimensions;
