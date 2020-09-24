@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <functional>
 #include <memory>
 #include <numeric>
 #include <stdexcept>
@@ -22,18 +23,15 @@ class NotImplementedException : public std::runtime_error {
 template <typename T>
 class Cell {
  public:
-  Cell(std::unique_ptr<T> value, bool onBorder)
-      : value(std::move(value)), onBorder(onBorder) {}
-  Cell(T value, bool onBorder)
-      : value(std::make_unique<T>(value)), onBorder(onBorder) {}
-  Cell(bool onBorder) : value(std::make_unique<T>()), onBorder(onBorder) {}
+  Cell(std::unique_ptr<T> value, bool onBorder) : value(std::move(value)) {}
+  Cell(T value, bool onBorder) : value(std::make_unique<T>(value)) {}
+  Cell() : value(std::make_unique<T>()) {}
 
   T* getValue() { return value.get(); }
   void setValue(T value) { *value.get() = value; }
 
  private:
   std::unique_ptr<T> value;
-  bool const onBorder;
 };
 
 // Grid
@@ -71,24 +69,38 @@ template <typename T>
 class Grid {
  public:
   Grid(const std::vector<size_t>& shape, Boundary boundary,
-       const std::vector<short>& neighborhood,
+       const std::vector<short>& neighborhood, T defaultValue,
        unsigned short int maxNeighborDistance = 1)
       : shape(shape),
         size(multiplyAll<size_t>(shape)),
         padding(determinePadding(shape) * maxNeighborDistance),
         dimensions(shape.size()),
         boundary(boundary),
-        neighborhood(neighborhood) {
-    // Initialize the Grid with padding
+        neighborhood(neighborhood),
+        defaultValue(defaultValue),
+        deadCell(std::make_unique<T>(defaultValue)) {
+
+    for (auto i = 0; i < size; ++i) {
+      cells.push_back(std::make_unique<T>(defaultValue));
+    }
+
+    std::function<Cell<T>*(size_t)> mapper;
+    if (boundary == Boundary::BOUNDED)
+      mapper = this->boundedMapper;
+    if (boundary == Boundary::TOROIDAL)
+      mapper = this->toroidalMapper;
 
     // -- TODO: Convince yourself these calculations are correct on paper
     unsigned int halfPadding = padding / 2;
-    for (auto i = 0; i < size + padding; ++i) {
+    for (size_t i = 0; i < size + padding; ++i) {
       auto onFirstBorder = i >= halfPadding && i < padding;
       auto onLastBorder = i >= (size - padding) && i < (size - halfPadding);
       cells.push_back(std::make_unique<Cell<T>>(onFirstBorder || onLastBorder));
     }
   }
+
+  Cell<T>* boundedMapper (size_t idx);
+  Cell<T>* toroidalMapper (size_t idx);
 
  private:
   std::vector<size_t> const shape;
@@ -97,6 +109,10 @@ class Grid {
   unsigned short int const dimensions;
   std::vector<short> const neighborhood;
   Boundary const boundary;
+
+  T const defaultValue;
+  std::unique_ptr<Cell<T>> const deadCell;
+  std::vector<Cell<T>* const> paddedCells;
   std::vector<std::unique_ptr<Cell<T>>> cells;
 };
 
