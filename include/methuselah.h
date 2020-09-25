@@ -34,10 +34,12 @@ class Cell {
   Cell() : value(std::make_unique<T>()) {}
 
   virtual T* get() { return value.get(); }
+  virtual T* getFuture() { return futureValue.get(); }
   virtual bool isOutOfBounds() { return false; }
 
  private:
   std::unique_ptr<T> value;
+  std::unique_ptr<T> futureValue;
 };
 
 template <typename T>
@@ -46,6 +48,9 @@ class OutOfBoundsCell final : public Cell<T> {
   OutOfBoundsCell(T* ptr) : ptr(ptr) {}
 
   T* get() { return ptr; }
+  T* getFuture() {
+    throw InvalidOperationException("Cannot get future value for OOB cell.");
+  }
   void set(T* ptr) { this->ptr = ptr; }
   bool isOutOfBounds() { return true; }
 
@@ -94,8 +99,9 @@ template <typename T>
 class Grid {
  public:
   Grid(const std::vector<size_t>& shape, Wrapping wrapping,
-       const std::vector<short>& neighborhood, T defaultValue,
-       unsigned short int maxNeighborDistance = 1)
+       const std::vector<short>& neighborhood,
+       std::function<void(T*, const std::vector<T*>&)> cellUpdate,
+       T defaultValue, unsigned short int maxNeighborDistance = 1)
       // TODO: If neighborhood is const, should determine maxNeighborDistance
       // based on the neighborhood provided
       : shape(shape),
@@ -104,6 +110,7 @@ class Grid {
         numDimensions(shape.size()),
         wrapping(wrapping),
         neighborhood(neighborhood),
+        cellUpdate(cellUpdate),
         defaultValue(defaultValue),
         deadCell(std::make_unique<T>(defaultValue)) {
     auto coordinate = allZeros(numDimensions);
@@ -111,7 +118,7 @@ class Grid {
       if (isOutOfBounds(coordinate)) {
         cells.push_back(std::unique_ptr<Cell<T>>(new OutOfBoundsCell<T>()));
       } else {
-        cells.push_back(std::make_unique<Cell<T>>());
+        cells.push_back(std::make_unique<Cell<T>>(defaultValue));
       }
       incrementCoordinate(coordinate);
     }
@@ -122,7 +129,7 @@ class Grid {
         auto oobCell = static_cast<OutOfBoundsCell<T>*>(cell);
         switch (wrapping) {
           case Wrapping::BOUNDED:
-            oobCell.set(deadCell.get());
+            oobCell->set(deadCell.get());
             break;
 
           case Wrapping::TOROIDAL:
@@ -131,9 +138,27 @@ class Grid {
         }
       }
     }
+
+    neighbors.resize(neighborhood.size());
   }
 
+  void update() {
+    for (auto i = 0; i < size; ++i) {
+      auto j = 0;
+      for (auto nidx : neighborhood) {
+        neighbors[j++] = getCell(nidx)->get();
+      }
+      auto cell = getCell(i)->get();
+      cellUpdate(cell, neighbors);
+    }
+  }
+
+  const T& getValue(size_t idx) { return *(getCell(idx)->get()); }
+
+  size_t getSize() { return size; }
+
  private:
+  // Immutable member variables
   std::vector<unsigned int> const shape;
   size_t const size;
   size_t const padding;
@@ -142,7 +167,17 @@ class Grid {
   Wrapping const wrapping;
   T const defaultValue;
   std::unique_ptr<Cell<T>> const deadCell;
+  std::function<void(T*, const std::vector<T*>&)> const cellUpdate;
+
+  // Mutable member variables
   std::vector<std::unique_ptr<Cell<T>>> cells;
+  std::vector<T*> neighbors;
+
+  // Private member functions
+  Cell<T>* getCell(size_t idx) {
+    auto padded = idx + padding / 2;
+    return cells[padded].get();
+  }
 
   size_t getIdx(const std::vector<size_t>& coordinates) {
     if (coordinates.size() != numDimensions)
@@ -165,9 +200,9 @@ class Grid {
     auto i = 0;
     do {
       coord = coordinate[i];
-      auto dim = std::get<i>(shape);
+      auto dim = shape[i];
       coordinate[i] = (coord + 1) % dim;
-    } while (coord == 0 && ++i < numDimensions)
+    } while (coord == 0 && ++i < numDimensions);
   }
 
   bool isOutOfBounds(const std::vector<size_t>& coordinate) {
