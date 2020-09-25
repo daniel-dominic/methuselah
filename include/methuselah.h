@@ -34,6 +34,7 @@ class Cell {
   Cell() : value(std::make_unique<T>()) {}
 
   virtual T* get() { return value.get(); }
+  virtual bool isOutOfBounds() { return false; }
 
  private:
   std::unique_ptr<T> value;
@@ -45,6 +46,8 @@ class OutOfBoundsCell final : public Cell<T> {
   OutOfBoundsCell(T* ptr) : ptr(ptr) {}
 
   T* get() { return ptr; }
+  void set(T* ptr) { this->ptr = ptr; }
+  bool isOutOfBounds() { return true; }
 
  private:
   T* ptr;
@@ -107,22 +110,29 @@ class Grid {
     //_________________________________________________________________________
     //_________________________________________________________________________
     auto coordinate = allZeros(dimensions);
-    for (auto i = 0; i < size; ++i) {
+    for (auto i = 0; i < size + padding; ++i) {
       if (isOutOfBounds(coordinate)) {
+        cells.push_back(std::unique_ptr<Cell<T>>(new OutOfBoundsCell<T>()));
+      } else {
+        cells.push_back(std::make_unique<Cell<T>>());
+      }
+      incrementCoordinate(coordinate);
+    }
+
+    for (auto i = 0; i < size + padding; ++i) {
+      auto cell = cells[i].get();
+      if (cell->isOutOfBounds()) {
+        auto oobCell = static_cast<OutOfBoundsCell<T>*>(cell);
         switch (wrapping) {
           case Wrapping::BOUNDED:
-            throw NotImplementedException();
+            oobCell.set(deadCell.get());
             break;
 
           case Wrapping::TOROIDAL:
             throw NotImplementedException();
             break;
         }
-      } else {
-        throw NotImplementedException();
-        // cells.push_back(std::make_unique<Cell<T>>(defaultValue));
       }
-      incrementCoordinate(coordinate);
     }
     //_________________________________________________________________________
     //_________________________________________________________________________
