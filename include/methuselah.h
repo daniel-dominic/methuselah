@@ -101,7 +101,7 @@ class Grid {
       : shape(shape),
         size(multiplyAll<size_t>(shape)),
         padding(determinePadding(shape) * maxNeighborDistance),
-        dimensions(shape.size()),
+        numDimensions(shape.size()),
         wrapping(wrapping),
         neighborhood(neighborhood),
         defaultValue(defaultValue),
@@ -109,7 +109,7 @@ class Grid {
     // Initialize grid, based on wrapping
     //_________________________________________________________________________
     //_________________________________________________________________________
-    auto coordinate = allZeros(dimensions);
+    auto coordinate = allZeros(numDimensions);
     for (auto i = 0; i < size + padding; ++i) {
       if (isOutOfBounds(coordinate)) {
         cells.push_back(std::unique_ptr<Cell<T>>(new OutOfBoundsCell<T>()));
@@ -142,7 +142,7 @@ class Grid {
   std::vector<unsigned int> const shape;
   size_t const size;
   size_t const padding;
-  unsigned short int const dimensions;
+  unsigned short int const numDimensions;
   std::vector<short> const neighborhood;
   Wrapping const wrapping;
   T const defaultValue;
@@ -150,12 +150,12 @@ class Grid {
   std::vector<std::unique_ptr<Cell<T>>> cells;
 
   size_t getIdx(const std::vector<size_t>& coordinates) {
-    if (coordinates.size() != dimensions)
+    if (coordinates.size() != numDimensions)
       throw InvalidOperationException(
-          "Coordinate dimensions do not match grid's dimensions.");
+          "Coordinate numDimensions do not match grid's numDimensions.");
 
     size_t result{0};
-    for (auto i = 0; i < dimensions; ++i) {
+    for (auto i = 0; i < numDimensions; ++i) {
       auto chunk = coordinates[i];
       for (auto j = 1; j < i; ++j) {
         chunk *= shape[j];
@@ -166,7 +166,13 @@ class Grid {
   }
 
   void incrementCoordinate(std::vector<size_t>& coordinate) {
-    throw NotImplementedException();
+    size_t coord;
+    auto i = 0;
+    do {
+      coord = coordinate[i];
+      auto dim = std::get<i>(shape);
+      coordinate[i] = (coord + 1) % dim;
+    } while (coord == 0 && ++i < numDimensions)
   }
 
   bool isOutOfBounds(const std::vector<size_t>& coordinate) {
