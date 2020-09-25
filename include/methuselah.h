@@ -149,7 +149,7 @@ class Grid {
   std::unique_ptr<Cell<T>> const deadCell;
   std::vector<std::unique_ptr<Cell<T>>> cells;
 
-  size_t getIdx(std::vector<size_t> coordinates) {
+  size_t getIdx(const std::vector<size_t>& coordinates) {
     if (coordinates.size() != dimensions)
       throw InvalidOperationException(
           "Coordinate dimensions do not match grid's dimensions.");
