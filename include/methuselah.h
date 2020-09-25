@@ -31,15 +31,23 @@ class InvalidOperationException : public std::runtime_error {
 template <typename T>
 class Cell {
  public:
-  Cell(std::unique_ptr<T> value, bool onBorder) : value(std::move(value)) {}
-  Cell(T value, bool onBorder) : value(std::make_unique<T>(value)) {}
   Cell() : value(std::make_unique<T>()) {}
 
-  T* getValue() { return value.get(); }
-  void setValue(T value) { *value.get() = value; }
+  virtual T* get() { return value.get(); }
 
  private:
   std::unique_ptr<T> value;
+};
+
+template <typename T>
+class OutOfBoundsCell final : public Cell<T> {
+ public:
+  OutOfBoundsCell(T* ptr) : ptr(ptr) {}
+
+  T* get() { return ptr; }
+
+ private:
+  T* ptr;
 };
 
 // Grid
@@ -48,9 +56,9 @@ std::vector<short> const VON_NEUMANN_2D_NEIGHBORHOOD{-3, -1, 1, 3};
 std::vector<short> const MOORE_2D_NEIGHBORHOOD{-4, -3, -2, -1, 1, 2, 3, 4};
 std::vector<short> const MOORE_1D_NEIGHBORHOOD{-1, 1};
 
-enum Boundary { BOUNDED, TOROIDAL };
+enum Wrapping { BOUNDED, TOROIDAL };
 
-namespace {  // "Internal" helper functions
+namespace {  // Helper functions
 template <typename T>
 T multiplyAll(const std::vector<T>& vec) {
   return std::accumulate(vec.begin(), vec.end(), 1, std::multiplies<T>());
@@ -71,55 +79,65 @@ size_t determinePadding(const std::vector<size_t>& shape) {
   auto expandedSize = multiplyAll<size_t>(shape);
   return expandedSize - size;
 }
+
+std::vector<size_t> allZeros(size_t length) {
+  auto result = std::vector<size_t>();
+  result.insert(result.begin(), length, 0);
+  return result;
+}
 }  // namespace
 
 template <typename T>
 class Grid {
  public:
-  Grid(const std::vector<size_t>& shape, Boundary boundary,
+  Grid(const std::vector<size_t>& shape, Wrapping wrapping,
        const std::vector<short>& neighborhood, T defaultValue,
        unsigned short int maxNeighborDistance = 1)
+      // TODO: If neighborhood is const, should determine maxNeighborDistance
+      // based on the neighborhood provided
       : shape(shape),
         size(multiplyAll<size_t>(shape)),
         padding(determinePadding(shape) * maxNeighborDistance),
         dimensions(shape.size()),
-        boundary(boundary),
+        wrapping(wrapping),
         neighborhood(neighborhood),
         defaultValue(defaultValue),
         deadCell(std::make_unique<T>(defaultValue)) {
+    // Initialize grid, based on wrapping
+    //_________________________________________________________________________
+    //_________________________________________________________________________
+    auto coordinate = allZeros(dimensions);
     for (auto i = 0; i < size; ++i) {
-      cells.push_back(std::make_unique<T>(defaultValue));
+      if (isOutOfBounds(coordinate)) {
+        switch (wrapping) {
+          case Wrapping::BOUNDED:
+            throw NotImplementedException();
+            break;
+
+          case Wrapping::TOROIDAL:
+            throw NotImplementedException();
+            break;
+        }
+      } else {
+        throw NotImplementedException();
+        // cells.push_back(std::make_unique<Cell<T>>(defaultValue));
+      }
+      incrementCoordinate(coordinate);
     }
-
-    paddedCells.resize(size + padding);
-
-    switch (boundary) {
-      case Boundary::BOUNDED:
-        makeBounded();
-        break;
-
-      case Boundary::TOROIDAL:
-        makeToroidal();
-        break;
-    }
-
-    // auto halfPadding = padding / 2;
-    // for (auto i = halfPadding; i < size + halfPadding; ++i) {
-    // }
+    //_________________________________________________________________________
+    //_________________________________________________________________________
   }
 
  private:
-  Cell<T>* makeBounded() {
-    unsigned int halfPadding = padding / 2;
-    for (auto i = 0; i < halfPadding; ++i) {
-      paddedCells[i] = deadCell.get();
-    }
-    for (auto i = size + padding - 1; i > halfPadding; ++i) {
-      paddedCells[i] = deadCell.get();
-    }
-  }
-
-  Cell<T>* makeToroidal() { throw NotImplementedException(); }
+  std::vector<unsigned int> const shape;
+  size_t const size;
+  size_t const padding;
+  unsigned short int const dimensions;
+  std::vector<short> const neighborhood;
+  Wrapping const wrapping;
+  T const defaultValue;
+  std::unique_ptr<Cell<T>> const deadCell;
+  std::vector<std::unique_ptr<Cell<T>>> cells;
 
   size_t getIdx(std::vector<size_t> coordinates) {
     if (coordinates.size() != dimensions)
@@ -130,24 +148,20 @@ class Grid {
     for (auto i = 0; i < dimensions; ++i) {
       auto chunk = coordinates[i];
       for (auto j = 1; j < i; ++j) {
-        chunk *= dimensions[j];
+        chunk *= shape[j];
       }
       result += chunk;
     }
     return result;
   }
 
-  std::vector<unsigned int> const shape;
-  size_t const size;
-  size_t const padding;
-  unsigned short int const dimensions;
-  std::vector<short> neighborhood;
-  Boundary const boundary;
+  void incrementCoordinate(std::vector<size_t>& coordinate) {
+    throw NotImplementedException();
+  }
 
-  T const defaultValue;
-  std::unique_ptr<Cell<T>> const deadCell;
-  std::vector<Cell<T>* const> paddedCells;
-  std::vector<std::unique_ptr<Cell<T>>> cells;
+  bool isOutOfBounds(const std::vector<size_t>& coordinate) {
+    throw NotImplementedException();
+  }
 };
 
 }  // namespace methuselah
