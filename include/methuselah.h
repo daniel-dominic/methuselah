@@ -148,8 +148,8 @@ class Grid {
       for (auto nidx : neighborhood) {
         neighbors[j++] = getCell(nidx)->get();
       }
-      auto cell = getCell(i)->get();
-      cellUpdate(cell, neighbors);
+      auto futureCell = getCell(i)->getFuture();
+      cellUpdate(futureCell, neighbors);
     }
   }
 
