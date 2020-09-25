@@ -106,9 +106,6 @@ class Grid {
         neighborhood(neighborhood),
         defaultValue(defaultValue),
         deadCell(std::make_unique<T>(defaultValue)) {
-    // Initialize grid, based on wrapping
-    //_________________________________________________________________________
-    //_________________________________________________________________________
     auto coordinate = allZeros(numDimensions);
     for (auto i = 0; i < size + padding; ++i) {
       if (isOutOfBounds(coordinate)) {
@@ -134,8 +131,6 @@ class Grid {
         }
       }
     }
-    //_________________________________________________________________________
-    //_________________________________________________________________________
   }
 
  private:
@@ -176,7 +171,13 @@ class Grid {
   }
 
   bool isOutOfBounds(const std::vector<size_t>& coordinate) {
-    throw NotImplementedException();
+    auto halfPadding = padding / 2;
+    for (auto coord : coordinate) {
+      if (coord < halfPadding || coord >= size + halfPadding) {
+        return true;
+      }
+    }
+    return false;
   }
 };
 
