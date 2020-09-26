@@ -7,15 +7,14 @@
 
 using namespace methuselah;
 
-constexpr unsigned int CELL_SIZE = 2;
+constexpr unsigned int CELL_SIZE = 4;
 constexpr unsigned int GENERATIONS = 1000;
 
-constexpr bool USE_DELAY = false;
+constexpr bool USE_DELAY = true;
 constexpr unsigned int DELAY = 500;
 
-
-constexpr unsigned short int GRID_WIDTH = 400;
-constexpr unsigned short int GRID_HEIGHT = 400;
+constexpr unsigned short int GRID_WIDTH = 300;
+constexpr unsigned short int GRID_HEIGHT = 200;
 
 constexpr unsigned short int WINDOW_WIDTH = GRID_WIDTH * CELL_SIZE;
 constexpr unsigned short int WINDOW_HEIGHT = GRID_HEIGHT * CELL_SIZE;
