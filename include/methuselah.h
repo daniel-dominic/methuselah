@@ -31,11 +31,15 @@ class InvalidOperationException : public std::runtime_error {
 template <typename T>
 class Cell {
  public:
-  Cell() : value(std::make_unique<T>()) {}
+  Cell(const T& val)
+      : value(std::make_unique<T>(val)),
+        futureValue(std::make_unique<T>(val)) {}
 
   virtual T* get() { return value.get(); }
   virtual T* getFuture() { return futureValue.get(); }
   virtual bool isOutOfBounds() { return false; }
+
+  void incrementTime() { *value = *futureValue; }
 
  private:
   std::unique_ptr<T> value;
@@ -100,6 +104,7 @@ class Grid {
  public:
   Grid(const std::vector<size_t>& shape, Wrapping wrapping,
        const std::vector<short>& neighborhood,
+       // NOTE! The update function _must_ set future cell, otherwise
        std::function<void(T*, const std::vector<T*>&)> cellUpdate,
        T defaultValue, unsigned short int maxNeighborDistance = 1)
       // TODO: If neighborhood is const, should determine maxNeighborDistance
@@ -143,6 +148,7 @@ class Grid {
   }
 
   void update() {
+    incrementTime();
     for (auto i = 0; i < size; ++i) {
       auto j = 0;
       for (auto nidx : neighborhood) {
@@ -177,6 +183,12 @@ class Grid {
   Cell<T>* getCell(size_t idx) {
     auto padded = idx + padding / 2;
     return cells[padded].get();
+  }
+
+  void incrementTime() {
+    for (auto i = 0; i < size; ++i) {
+      getCell(i)->incrementTime();
+    }
   }
 
   size_t getIdx(const std::vector<size_t>& coordinates) {

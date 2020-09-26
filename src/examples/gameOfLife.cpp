@@ -3,6 +3,6 @@
 using namespace methuselah;
 
 int main() {
-  auto cell1 = Cell<bool>();
+  auto cell1 = Cell<bool>(true);
   return 0;
 }
