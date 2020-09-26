@@ -229,7 +229,7 @@ class Grid {
     for (auto i = 0; i < numDimensions; ++i) {
       auto chunk = coordinates[i] + maxNeighborDistance;
       for (auto j = 1; j <= i; ++j) {
-        chunk *= getRealDimSize(i);
+        chunk *= getRealDimSize(j - 1);
       }
       result += chunk;
     }

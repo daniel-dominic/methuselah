@@ -4,15 +4,14 @@
 
 using namespace methuselah;
 
-constexpr unsigned int CELL_SIZE = 10;
+constexpr unsigned int CELL_SIZE = 5;
 constexpr unsigned int GENERATIONS = 1000;
 
 constexpr bool USE_DELAY = false;
 constexpr unsigned int DELAY = 500;
 
-// TODO: If WIDTH != HEIGHT, get a bug
 constexpr unsigned short int WINDOW_WIDTH = 100 * CELL_SIZE;
-constexpr unsigned short int WINDOW_HEIGHT = 100 * CELL_SIZE;
+constexpr unsigned short int WINDOW_HEIGHT = 150 * CELL_SIZE;
 
 constexpr unsigned short int GRID_WIDTH = WINDOW_WIDTH / CELL_SIZE;
 constexpr unsigned short int GRID_HEIGHT = WINDOW_HEIGHT / CELL_SIZE;
@@ -40,11 +39,12 @@ int main() {
     lifeUpdate,
     false
   };
-  grid.setValue({21,20}, true);
-  grid.setValue({20,20}, true);
-  grid.setValue({19,21}, true);
-  grid.setValue({20,21}, true);
-  grid.setValue({20,22}, true);
+  
+  grid.setValue({6,4}, true);
+  grid.setValue({5,4}, true);
+  grid.setValue({5,5}, true);
+  grid.setValue({4,5}, true);
+  grid.setValue({5,6}, true);
   
   // -------------------------------------------------------
 
