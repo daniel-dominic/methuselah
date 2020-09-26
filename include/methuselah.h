@@ -34,14 +34,20 @@ class Cell {
   Cell(const T& val)
       : value(std::make_unique<T>(val)),
         futureValue(std::make_unique<T>(val)) {}
+  Cell() {}
 
   virtual T* get() { return value.get(); }
   virtual T* getFuture() { return futureValue.get(); }
   virtual bool isOutOfBounds() { return false; }
 
-  // TODO: Profile & make sure you're not wasting too much time 
+  virtual void set(const T& val) {
+    *value = val;
+    *futureValue = val;
+  }
+
+  // TODO: Profile & make sure you're not wasting too much time
   //       frequently calling the copy constructor.
-  void incrementTime() { *value = *futureValue; }
+  virtual void incrementTime() { *value = *futureValue; }
 
  private:
   std::unique_ptr<T> value;
@@ -52,6 +58,7 @@ template <typename T>
 class OutOfBoundsCell final : public Cell<T> {
  public:
   OutOfBoundsCell(T* ptr) : ptr(ptr) {}
+  OutOfBoundsCell() : ptr(nullptr) {}
 
   T* get() { return ptr; }
   T* getFuture() {
@@ -59,6 +66,7 @@ class OutOfBoundsCell final : public Cell<T> {
   }
   void set(T* ptr) { this->ptr = ptr; }
   bool isOutOfBounds() { return true; }
+  void incrementTime() {}
 
  private:
   T* ptr;
@@ -66,6 +74,7 @@ class OutOfBoundsCell final : public Cell<T> {
 
 // Grid
 // ====------------------------------------------------------------------------
+// Convert these to functions sensitive to the shape of the grid
 std::vector<short> const VON_NEUMANN_2D_NEIGHBORHOOD{-3, -1, 1, 3};
 std::vector<short> const MOORE_2D_NEIGHBORHOOD{-4, -3, -2, -1, 1, 2, 3, 4};
 std::vector<short> const MOORE_1D_NEIGHBORHOOD{-1, 1};
@@ -90,7 +99,7 @@ size_t determinePadding(const std::vector<size_t>& shape) {
   }
 
   auto size = multiplyAll<size_t>(shape);
-  auto expandedSize = multiplyAll<size_t>(shape);
+  auto expandedSize = multiplyAll<size_t>(expanded);
   return expandedSize - size;
 }
 
@@ -112,13 +121,15 @@ class Grid {
       // based on the neighborhood provided
       : shape(shape),
         size(multiplyAll<size_t>(shape)),
+        maxNeighborDistance(maxNeighborDistance),
         padding(determinePadding(shape) * maxNeighborDistance),
+        singleDimPadding(maxNeighborDistance * 2),
         numDimensions(shape.size()),
         wrapping(wrapping),
         neighborhood(neighborhood),
         cellUpdate(cellUpdate),
         defaultValue(defaultValue),
-        deadCell(std::make_unique<T>(defaultValue)) {
+        deadCell(std::make_unique<Cell<T>>(defaultValue)) {
     auto coordinate = allZeros(numDimensions);
     for (auto i = 0; i < size + padding; ++i) {
       if (isOutOfBounds(coordinate)) {
@@ -135,7 +146,7 @@ class Grid {
         auto oobCell = static_cast<OutOfBoundsCell<T>*>(cell);
         switch (wrapping) {
           case Wrapping::BOUNDED:
-            oobCell->set(deadCell.get());
+            oobCell->set(deadCell->get());
             break;
 
           case Wrapping::TOROIDAL:
@@ -150,24 +161,38 @@ class Grid {
 
   void update() {
     incrementTime();
-    for (auto i = 0; i < size; ++i) {
-      auto j = 0;
-      for (auto nidx : neighborhood) {
-        neighbors[j++] = getCell(nidx)->get();
+    for (auto i = 0; i < size + padding; ++i) {
+      auto cell = getCell(i);
+      if (!cell->isOutOfBounds()) {
+        auto j = 0;
+        for (auto offset : neighborhood) {
+          auto nidx = i + offset;
+          neighbors[j++] = getCell(nidx)->get();
+        }
+        auto futureCell = cell->getFuture();
+        cellUpdate(futureCell, neighbors);
       }
-      auto futureCell = getCell(i)->getFuture();
-      cellUpdate(futureCell, neighbors);
     }
   }
 
   const T& getValue(size_t idx) { return *(getCell(idx)->get()); }
+  const T& getValue(const std::vector<size_t>& coordinates) {
+    return getValue(getIdx(coordinates));
+  }
+
+  void setValue(size_t idx, const T& val) { getCell(idx)->set(val); }
+  void setValue(const std::vector<size_t>& coordinates, const T& val) {
+    setValue(getIdx(coordinates), val);
+  }
 
   size_t getSize() { return size; }
 
  private:
   // Immutable member variables
-  std::vector<unsigned int> const shape;
+  std::vector<size_t> const shape;
   size_t const size;
+  size_t const maxNeighborDistance;
+  size_t const singleDimPadding;
   size_t const padding;
   unsigned short int const numDimensions;
   std::vector<short> const neighborhood;
@@ -182,12 +207,11 @@ class Grid {
 
   // Private member functions
   Cell<T>* getCell(size_t idx) {
-    auto padded = idx + padding / 2;
-    return cells[padded].get();
+    return cells[idx].get();
   }
 
   void incrementTime() {
-    for (auto i = 0; i < size; ++i) {
+    for (auto i = 0; i < size + padding; ++i) {
       getCell(i)->incrementTime();
     }
   }
@@ -200,7 +224,7 @@ class Grid {
     size_t result{0};
     for (auto i = 0; i < numDimensions; ++i) {
       auto chunk = coordinates[i];
-      for (auto j = 1; j < i; ++j) {
+      for (auto j = 1; j <= i; ++j) {
         chunk *= shape[j];
       }
       result += chunk;
@@ -209,19 +233,18 @@ class Grid {
   }
 
   void incrementCoordinate(std::vector<size_t>& coordinate) {
-    size_t coord;
     auto i = 0;
     do {
-      coord = coordinate[i];
-      auto dim = shape[i];
-      coordinate[i] = (coord + 1) % dim;
-    } while (coord == 0 && ++i < numDimensions);
+      auto dimSize = shape[i];
+      coordinate[i] = (coordinate[i] + 1) % (dimSize + singleDimPadding);
+    } while (coordinate[i] == 0 && ++i < numDimensions);
   }
 
   bool isOutOfBounds(const std::vector<size_t>& coordinate) {
-    auto halfPadding = padding / 2;
-    for (auto coord : coordinate) {
-      if (coord < halfPadding || coord >= size + halfPadding) {
+    for (auto i = 0; i < numDimensions; ++i) {
+      auto coord = coordinate[i];
+      auto dimSize = shape[i];
+      if (coord < maxNeighborDistance || coord >= dimSize + maxNeighborDistance) {
         return true;
       }
     }
