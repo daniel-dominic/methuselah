@@ -7,8 +7,8 @@ using namespace methuselah;
 constexpr unsigned int CELL_SIZE = 10;
 constexpr unsigned int GENERATIONS = 1000;
 
-constexpr bool USE_DELAY = true;
-constexpr unsigned int DELAY = 100;
+constexpr bool USE_DELAY = false;
+constexpr unsigned int DELAY = 500;
 
 constexpr unsigned short int WINDOW_WIDTH = 100 * CELL_SIZE;
 constexpr unsigned short int WINDOW_HEIGHT = 100 * CELL_SIZE;
@@ -33,17 +33,17 @@ int main() {
   Grid<bool> grid{
     {GRID_WIDTH, GRID_HEIGHT},
     Wrapping::BOUNDED,
-    {-GRID_WIDTH - 1, -GRID_WIDTH, -GRID_WIDTH + 1,
-                  -1,                            1,                  
-      GRID_WIDTH - 1,  GRID_WIDTH,  GRID_WIDTH + 1},
+    {-GRID_WIDTH - 1 - 2, -GRID_WIDTH - 2, -GRID_WIDTH + 1 - 2,
+                      -1,                                    1,                  
+      GRID_WIDTH - 1 + 2,  GRID_WIDTH + 2,  GRID_WIDTH + 1 + 2},
     lifeUpdate,
     false
   };
-  grid.setValue({11,10}, true);
-  grid.setValue({10,10}, true);
-  grid.setValue({9,11}, true);
-  grid.setValue({10,11}, true);
-  grid.setValue({10,12}, true);
+  grid.setValue({21,20}, true);
+  grid.setValue({20,20}, true);
+  grid.setValue({19,21}, true);
+  grid.setValue({20,21}, true);
+  grid.setValue({20,22}, true);
   
   // -------------------------------------------------------
 

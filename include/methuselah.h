@@ -129,7 +129,7 @@ class Grid {
         neighborhood(neighborhood),
         cellUpdate(cellUpdate),
         defaultValue(defaultValue),
-        deadCell(std::make_unique<Cell<T>>(defaultValue)) {
+        defaultCellValue(std::unique_ptr<T>(new T(defaultValue))) {
     auto coordinate = allZeros(numDimensions);
     for (auto i = 0; i < size + padding; ++i) {
       if (isOutOfBounds(coordinate)) {
@@ -146,7 +146,7 @@ class Grid {
         auto oobCell = static_cast<OutOfBoundsCell<T>*>(cell);
         switch (wrapping) {
           case Wrapping::BOUNDED:
-            oobCell->set(deadCell->get());
+            oobCell->set(defaultCellValue.get());
             break;
 
           case Wrapping::TOROIDAL:
@@ -198,7 +198,7 @@ class Grid {
   std::vector<short> const neighborhood;
   Wrapping const wrapping;
   T const defaultValue;
-  std::unique_ptr<Cell<T>> const deadCell;
+  std::unique_ptr<T> const defaultCellValue;
   std::function<void(T*, const std::vector<T*>&)> const cellUpdate;
 
   // Mutable member variables
@@ -216,6 +216,10 @@ class Grid {
     }
   }
 
+  size_t getRealDimSize(size_t idx) {
+    return shape[idx] + singleDimPadding;
+  }
+
   size_t getIdx(const std::vector<size_t>& coordinates) {
     if (coordinates.size() != numDimensions)
       throw InvalidOperationException(
@@ -223,9 +227,9 @@ class Grid {
 
     size_t result{0};
     for (auto i = 0; i < numDimensions; ++i) {
-      auto chunk = coordinates[i];
+      auto chunk = coordinates[i] + maxNeighborDistance;
       for (auto j = 1; j <= i; ++j) {
-        chunk *= shape[j];
+        chunk *= getRealDimSize(i);
       }
       result += chunk;
     }
@@ -235,8 +239,7 @@ class Grid {
   void incrementCoordinate(std::vector<size_t>& coordinate) {
     auto i = 0;
     do {
-      auto dimSize = shape[i];
-      coordinate[i] = (coordinate[i] + 1) % (dimSize + singleDimPadding);
+      coordinate[i] = (coordinate[i] + 1) % getRealDimSize(i);
     } while (coordinate[i] == 0 && ++i < numDimensions);
   }
 
