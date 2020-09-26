@@ -39,6 +39,8 @@ class Cell {
   virtual T* getFuture() { return futureValue.get(); }
   virtual bool isOutOfBounds() { return false; }
 
+  // TODO: Profile & make sure you're not wasting too much time 
+  //       frequently calling the copy constructor.
   void incrementTime() { *value = *futureValue; }
 
  private:
@@ -104,7 +106,6 @@ class Grid {
  public:
   Grid(const std::vector<size_t>& shape, Wrapping wrapping,
        const std::vector<short>& neighborhood,
-       // NOTE! The update function _must_ set future cell, otherwise
        std::function<void(T*, const std::vector<T*>&)> cellUpdate,
        T defaultValue, unsigned short int maxNeighborDistance = 1)
       // TODO: If neighborhood is const, should determine maxNeighborDistance
