@@ -10,6 +10,7 @@ constexpr unsigned int GENERATIONS = 1000;
 constexpr bool USE_DELAY = false;
 constexpr unsigned int DELAY = 500;
 
+// TODO: If WIDTH != HEIGHT, get a bug
 constexpr unsigned short int WINDOW_WIDTH = 100 * CELL_SIZE;
 constexpr unsigned short int WINDOW_HEIGHT = 100 * CELL_SIZE;
 
