@@ -175,14 +175,20 @@ class Grid {
     }
   }
 
-  const T& getValue(size_t idx) { return *(getCell(idx)->get()); }
+  // TODO: Write an iterator for this class
+
   const T& getValue(const std::vector<size_t>& coordinates) {
     return getValue(getIdx(coordinates));
   }
 
-  void setValue(size_t idx, const T& val) { getCell(idx)->set(val); }
   void setValue(const std::vector<size_t>& coordinates, const T& val) {
-    setValue(getIdx(coordinates), val);
+    auto idx = getIdx(coordinates);
+    auto cell = getCell(idx);
+    if (cell->isOutOfBounds()) {
+      throw std::out_of_range(
+          "Can't manually set value for out of bounds indices");
+    }
+    setValue(idx, val);
   }
 
   size_t getSize() { return size; }
@@ -206,9 +212,10 @@ class Grid {
   std::vector<T*> neighbors;
 
   // Private member functions
-  Cell<T>* getCell(size_t idx) {
-    return cells[idx].get();
-  }
+  const T& getValue(size_t idx) { return *(getCell(idx)->get()); }
+  void setValue(size_t idx, const T& val) { getCell(idx)->set(val); }
+
+  Cell<T>* getCell(size_t idx) { return cells[idx].get(); }
 
   void incrementTime() {
     for (auto i = 0; i < size + padding; ++i) {
@@ -216,9 +223,7 @@ class Grid {
     }
   }
 
-  size_t getRealDimSize(size_t idx) {
-    return shape[idx] + singleDimPadding;
-  }
+  size_t getRealDimSize(size_t idx) { return shape[idx] + singleDimPadding; }
 
   size_t getIdx(const std::vector<size_t>& coordinates) {
     if (coordinates.size() != numDimensions)
@@ -246,8 +251,8 @@ class Grid {
   bool isOutOfBounds(const std::vector<size_t>& coordinate) {
     for (auto i = 0; i < numDimensions; ++i) {
       auto coord = coordinate[i];
-      auto dimSize = shape[i];
-      if (coord < maxNeighborDistance || coord >= dimSize + maxNeighborDistance) {
+      if (coord < maxNeighborDistance ||
+          coord >= shape[i] + maxNeighborDistance) {
         return true;
       }
     }
