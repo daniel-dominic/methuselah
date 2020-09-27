@@ -7,14 +7,13 @@
 
 using namespace methuselah;
 
-constexpr unsigned int CELL_SIZE = 4;
-constexpr unsigned int GENERATIONS = 1000;
+constexpr unsigned int CELL_SIZE = 6;
 
 constexpr bool USE_DELAY = true;
 constexpr unsigned int DELAY = 500;
 
-constexpr unsigned short int GRID_WIDTH = 300;
-constexpr unsigned short int GRID_HEIGHT = 200;
+constexpr unsigned short int GRID_WIDTH = 200;
+constexpr unsigned short int GRID_HEIGHT = 100;
 
 constexpr unsigned short int WINDOW_WIDTH = GRID_WIDTH * CELL_SIZE;
 constexpr unsigned short int WINDOW_HEIGHT = GRID_HEIGHT * CELL_SIZE;
@@ -71,7 +70,7 @@ int main() {
   auto running = true;
   while (running) {
     SDL_Event e;
-    while( SDL_PollEvent( &e ) != 0 ) {
+    while(SDL_PollEvent(&e) != 0) {
       switch (e.type) {
         case SDL_QUIT:
           running = false;

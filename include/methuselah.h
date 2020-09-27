@@ -191,7 +191,9 @@ class Grid {
     setValue(idx, val);
   }
 
-  size_t getSize() { return size; }
+  const std::vector<size_t>& getShape() const { return shape; }
+
+  size_t getSize() const { return size; }
 
  private:
   // Immutable member variables
