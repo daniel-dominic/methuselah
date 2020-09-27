@@ -74,12 +74,8 @@ class OutOfBoundsCell final : public Cell<T> {
 
 // Grid
 // ====------------------------------------------------------------------------
-// Convert these to functions sensitive to the shape of the grid
-std::vector<short> const VON_NEUMANN_2D_NEIGHBORHOOD{-3, -1, 1, 3};
-std::vector<short> const MOORE_2D_NEIGHBORHOOD{-4, -3, -2, -1, 1, 2, 3, 4};
-std::vector<short> const MOORE_1D_NEIGHBORHOOD{-1, 1};
-
 enum Wrapping { BOUNDED, TOROIDAL };
+enum Neighborhood { MOORE, VON_NEUMANN, CUSTOM };
 
 namespace {  // Helper functions
 template <typename T>
@@ -103,6 +99,8 @@ size_t determinePadding(const std::vector<size_t>& shape) {
   return expandedSize - size;
 }
 
+
+
 std::vector<size_t> allZeros(size_t length) {
   auto result = std::vector<size_t>();
   result.insert(result.begin(), length, 0);
@@ -114,7 +112,7 @@ template <typename T>
 class Grid {
  public:
   Grid(const std::vector<size_t>& shape, Wrapping wrapping,
-       const std::vector<short>& neighborhood,
+       Neighborhood neighborhood,
        std::function<void(T*, const std::vector<T*>&)> cellUpdate,
        T defaultValue, unsigned short int maxNeighborDistance = 1)
       // TODO: If neighborhood is const, should determine maxNeighborDistance
@@ -126,10 +124,12 @@ class Grid {
         singleDimPadding(maxNeighborDistance * 2),
         numDimensions(shape.size()),
         wrapping(wrapping),
-        neighborhood(neighborhood),
         cellUpdate(cellUpdate),
         defaultValue(defaultValue),
         defaultCellValue(std::unique_ptr<T>(new T(defaultValue))) {
+    
+    setNeighborhood(neighborhoodType);
+
     auto coordinate = allZeros(numDimensions);
     for (auto i = 0; i < size + padding; ++i) {
       if (isOutOfBounds(coordinate)) {
@@ -155,8 +155,6 @@ class Grid {
         }
       }
     }
-
-    neighbors.resize(neighborhood.size());
   }
 
   void update() {
@@ -194,6 +192,22 @@ class Grid {
   const std::vector<size_t>& getShape() const { return shape; }
 
   size_t getSize() const { return size; }
+  
+  void setNeighborhood(Neighborhood neighborhoodType) {
+    this->neighborhoodType = neighborhoodType;
+    switch (neighborhoodType) {
+      case Neighborhood::MOORE:
+        throw NotImplementedException();
+        break;
+      case Neighborhood::VON_NEUMANN:
+        throw NotImplementedException();
+        break;
+      case Neighborhood::CUSTOM:
+        throw NotImplementedException();
+        break;
+    }
+    neighbors.resize(neighborhood.size());
+  }
 
  private:
   // Immutable member variables
@@ -203,14 +217,15 @@ class Grid {
   size_t const singleDimPadding;
   size_t const padding;
   unsigned short int const numDimensions;
-  std::vector<short> const neighborhood;
   Wrapping const wrapping;
   T const defaultValue;
   std::unique_ptr<T> const defaultCellValue;
-  std::function<void(T*, const std::vector<T*>&)> const cellUpdate;
 
   // Mutable member variables
   std::vector<std::unique_ptr<Cell<T>>> cells;
+  std::function<void(T*, const std::vector<T*>&)> cellUpdate;
+  Neighborhood neighborhoodType;
+  std::vector<short> neighborhood;
   std::vector<T*> neighbors;
 
   // Private member functions
@@ -242,6 +257,7 @@ class Grid {
     }
     return result;
   }
+
 
   void incrementCoordinate(std::vector<size_t>& coordinate) {
     auto i = 0;
