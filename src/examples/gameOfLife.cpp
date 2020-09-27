@@ -32,7 +32,7 @@ void lifeUpdate(bool* cell, std::vector<bool*> neighbors) {
   }
 }
 
-void randomize(Grid<bool>& grid, unsigned short mod = 3) {
+void randomize(Grid<bool>& grid, unsigned short mod = 10) {
   srand(time(0));
   auto coord = std::vector<size_t>{0, 0};
   for (auto i = 0; i < GRID_HEIGHT; ++i) {
@@ -49,8 +49,7 @@ int main() {
     auto grid = std::shared_ptr<Grid<bool>>(new Grid<bool>{
         {GRID_WIDTH, GRID_HEIGHT},
         Wrapping::BOUNDED,
-        {-GRID_WIDTH - 1 - 2, -GRID_WIDTH - 2, -GRID_WIDTH + 1 - 2, -1, 1,
-         GRID_WIDTH - 1 + 2, GRID_WIDTH + 2, GRID_WIDTH + 1 + 2},
+        Neighborhood::MOORE,
         lifeUpdate,
         false});
     randomize(*grid);

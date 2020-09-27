@@ -2,6 +2,7 @@
 
 #include <assert.h>
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <memory>
@@ -83,6 +84,12 @@ T multiplyAll(const std::vector<T>& vec) {
   return std::accumulate(vec.begin(), vec.end(), 1, std::multiplies<T>());
 }
 
+std::vector<size_t> allZeros(size_t length) {
+  auto result = std::vector<size_t>();
+  result.insert(result.begin(), length, 0);
+  return result;
+}
+
 // Expand each dimension out one unit on each extremity,
 // then subtract the size of the resulting shape from the
 // original. This gives you the number of cells needed to
@@ -99,12 +106,30 @@ size_t determinePadding(const std::vector<size_t>& shape) {
   return expandedSize - size;
 }
 
-
-
-std::vector<size_t> allZeros(size_t length) {
-  auto result = std::vector<size_t>();
-  result.insert(result.begin(), length, 0);
-  return result;
+std::vector<std::vector<int>> generateMooreOffsets(size_t numDimensions,
+                                              bool isLastDim = true) {
+  if (numDimensions == 0) {
+    return {};
+  }
+  auto head = std::vector<int>{-1, 0, 1};
+  auto tails = generateMooreOffsets(numDimensions - 1, false);
+  auto offsets = std::vector<std::vector<int>>();
+  for (auto x : head) {
+    if (tails.empty()) {
+      offsets.push_back(std::vector<int>{x});
+      continue;
+    }
+    for (const auto& tail : tails) {
+      std::vector<int> result{x};
+      result.insert(result.end(), tail.begin(), tail.end());
+      if (isLastDim && std::all_of(result.begin(), result.end(),
+                                   [](int x) { return x == 0; })) {
+        continue;
+      }
+      offsets.push_back(result);
+    }
+  }
+  return offsets;
 }
 }  // namespace
 
@@ -127,7 +152,6 @@ class Grid {
         cellUpdate(cellUpdate),
         defaultValue(defaultValue),
         defaultCellValue(std::unique_ptr<T>(new T(defaultValue))) {
-    
     setNeighborhood(neighborhoodType);
 
     auto coordinate = allZeros(numDimensions);
@@ -192,19 +216,28 @@ class Grid {
   const std::vector<size_t>& getShape() const { return shape; }
 
   size_t getSize() const { return size; }
-  
+
   void setNeighborhood(Neighborhood neighborhoodType) {
+    if (neighborhoodType == Neighborhood::CUSTOM)
+      throw InvalidOperationException(
+          "To set custom neighborhood, provide offsets directly");
+
     this->neighborhoodType = neighborhoodType;
     switch (neighborhoodType) {
       case Neighborhood::MOORE:
-        throw NotImplementedException();
+        neighborhood = generateMoore(numDimensions);
         break;
       case Neighborhood::VON_NEUMANN:
         throw NotImplementedException();
         break;
-      case Neighborhood::CUSTOM:
-        throw NotImplementedException();
-        break;
+    }
+    neighbors.resize(neighborhood.size());
+  }
+
+  void setNeighborhood(std::vector<std::vector<int>> offsets) {
+    neighborhood.clear();
+    for (const auto& offset : offsets) {
+      neighborhood.push_back(getIdx(offset), false);
     }
     neighbors.resize(neighborhood.size());
   }
@@ -225,7 +258,7 @@ class Grid {
   std::vector<std::unique_ptr<Cell<T>>> cells;
   std::function<void(T*, const std::vector<T*>&)> cellUpdate;
   Neighborhood neighborhoodType;
-  std::vector<short> neighborhood;
+  std::vector<int> neighborhood;
   std::vector<T*> neighbors;
 
   // Private member functions
@@ -258,6 +291,30 @@ class Grid {
     return result;
   }
 
+  long int getOffsetIdx(const std::vector<int>& offsetCoords) {
+    if (offsetCoords.size() != numDimensions)
+      throw InvalidOperationException(
+          "Coordinate numDimensions do not match grid's numDimensions.");
+
+    long int result{0};
+    for (auto i = 0; i < numDimensions; ++i) {
+      auto chunk = offsetCoords[i];
+      for (auto j = 1; j <= i; ++j) {
+        chunk *= getRealDimSize(j - 1);
+      }
+      result += chunk;
+    }
+    return result;
+  }
+
+  std::vector<int> generateMoore(size_t numDimensions) {
+    auto offsets = generateMooreOffsets(numDimensions);
+    std::vector<int> neighborhood;
+    for (const auto& coord : offsets) {
+      neighborhood.push_back(getOffsetIdx(coord));
+    }
+    return neighborhood;
+  }
 
   void incrementCoordinate(std::vector<size_t>& coordinate) {
     auto i = 0;
@@ -276,6 +333,7 @@ class Grid {
     }
     return false;
   }
+  
 };
 
 }  // namespace methuselah
