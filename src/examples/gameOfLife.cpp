@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "eventHandler.h"
 #include "gridRenderer.h"
 #include "methuselah.h"
 
@@ -32,7 +33,7 @@ void lifeUpdate(bool* cell, std::vector<bool*> neighbors) {
 }
 
 void randomize(Grid<bool>& grid, unsigned short mod = 3) {
-  srand(time(nullptr));
+  srand(time(0));
   auto coord = std::vector<size_t>{0, 0};
   for (auto i = 0; i < GRID_HEIGHT; ++i) {
     coord[1] = i;
@@ -52,31 +53,19 @@ int main() {
          GRID_WIDTH - 1 + 2, GRID_WIDTH + 2, GRID_WIDTH + 1 + 2},
         lifeUpdate,
         false});
+    randomize(*grid);
 
     GridRenderer2D<bool> renderer{grid, CELL_SIZE, CELL_SIZE, WINDOW_WIDTH,
                                   WINDOW_HEIGHT};
+    EventHandler eventHandler;
+    eventHandler.registerKeyDownAction(SDLK_r, [&]() { randomize(*grid); });
 
     auto running = true;
     while (running) {
-      SDL_Event e;
-      while (SDL_PollEvent(&e) != 0) {
-        switch (e.type) {
-          case SDL_QUIT:
-            running = false;
-            break;
-          case SDL_KEYDOWN:
-            if (e.key.keysym.sym == SDLK_ESCAPE) {
-              running = false;
-            }
-            if (e.key.keysym.sym == SDLK_r) {
-              randomize(*grid);
-            }
-            break;
-        }
-      }
-
+      eventHandler.handleAll();
       grid->update();
       renderer.render();
+      running = !eventHandler.receivedQuitSignal();
     }
   }
 
