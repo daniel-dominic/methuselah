@@ -1,8 +1,8 @@
+#include <SDL2/SDL.h>
 #include <stdlib.h>
 #include <time.h>
 
-#include <SDL2/SDL.h>
-
+#include "gridRenderer.h"
 #include "methuselah.h"
 
 using namespace methuselah;
@@ -10,7 +10,7 @@ using namespace methuselah;
 constexpr unsigned int CELL_SIZE = 6;
 
 constexpr bool USE_DELAY = true;
-constexpr unsigned int DELAY = 500;
+constexpr unsigned int DELAY = 50;
 
 constexpr unsigned short int GRID_WIDTH = 200;
 constexpr unsigned short int GRID_HEIGHT = 100;
@@ -35,84 +35,51 @@ void randomize(Grid<bool>& grid, unsigned short mod = 3) {
   srand(time(nullptr));
   auto coord = std::vector<size_t>{0, 0};
   for (auto i = 0; i < GRID_HEIGHT; ++i) {
-    coord[1] = i; 
+    coord[1] = i;
     for (auto j = 0; j < GRID_WIDTH; ++j) {
-      coord[0] = j; 
+      coord[0] = j;
       grid.setValue(coord, rand() % mod == 0);
     }
   }
 }
 
 int main() {
-  Grid<bool> grid{
-    {GRID_WIDTH, GRID_HEIGHT},
-    Wrapping::BOUNDED,
-    {-GRID_WIDTH - 1 - 2, -GRID_WIDTH - 2, -GRID_WIDTH + 1 - 2,
-                      -1,                                    1,                  
-      GRID_WIDTH - 1 + 2,  GRID_WIDTH + 2,  GRID_WIDTH + 1 + 2},
-    lifeUpdate,
-    false
-  };
-  
-  // grid.setValue({6,4}, true);
-  // grid.setValue({5,4}, true);
-  // grid.setValue({5,5}, true);
-  // grid.setValue({4,5}, true);
-  // grid.setValue({5,6}, true);
+  {
+    auto grid = std::shared_ptr<Grid<bool>>(new Grid<bool>{
+        {GRID_WIDTH, GRID_HEIGHT},
+        Wrapping::BOUNDED,
+        {-GRID_WIDTH - 1 - 2, -GRID_WIDTH - 2, -GRID_WIDTH + 1 - 2, -1, 1,
+         GRID_WIDTH - 1 + 2, GRID_WIDTH + 2, GRID_WIDTH + 1 + 2},
+        lifeUpdate,
+        false});
 
-  auto window =
-      SDL_CreateWindow("Game Of Life", SDL_WINDOWPOS_UNDEFINED,
-                       SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, 0);
-  auto renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    GridRenderer2D<bool> renderer{grid, CELL_SIZE, CELL_SIZE, WINDOW_WIDTH,
+                                  WINDOW_HEIGHT};
 
-  SDL_Rect rect{0, 0, CELL_SIZE, CELL_SIZE};
-  auto coord = std::vector<size_t>{0, 0};
-  auto running = true;
-  while (running) {
-    SDL_Event e;
-    while(SDL_PollEvent(&e) != 0) {
-      switch (e.type) {
-        case SDL_QUIT:
-          running = false;
-          break;
-        case SDL_KEYDOWN:
-          if (e.key.keysym.sym == SDLK_ESCAPE)
+    auto running = true;
+    while (running) {
+      SDL_Event e;
+      while (SDL_PollEvent(&e) != 0) {
+        switch (e.type) {
+          case SDL_QUIT:
             running = false;
-          if (e.key.keysym.sym == SDLK_r)
-            randomize(grid);
-          break;
-      }
-    }
-
-    rect.x = 0;
-    rect.y = 0;
-
-    for (auto i = 0; i < GRID_HEIGHT; ++i) {
-      rect.y = i * CELL_SIZE;
-      coord[1] = i;
-      for (auto j = 0; j < GRID_WIDTH; ++j) {
-        rect.x = j * CELL_SIZE;
-        coord[0] = j;
-        
-        auto value = grid.getValue(coord);
-        if (value) {
-          SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        } else {
-          SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+            break;
+          case SDL_KEYDOWN:
+            if (e.key.keysym.sym == SDLK_ESCAPE) {
+              running = false;
+            }
+            if (e.key.keysym.sym == SDLK_r) {
+              randomize(*grid);
+            }
+            break;
         }
-        SDL_RenderFillRect(renderer, &rect);
       }
-    }
-    grid.update();
 
-    SDL_RenderPresent(renderer);
-    if (USE_DELAY) {
-      SDL_Delay(DELAY);
+      grid->update();
+      renderer.render();
     }
   }
 
-  SDL_DestroyRenderer(renderer);
-  SDL_DestroyWindow(window);
   SDL_Quit();
 
   return 0;

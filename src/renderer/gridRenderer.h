@@ -19,9 +19,9 @@ class GridRenderer {
         cellHeight(cellHeight),
         windowWidth(windowWidth),
         windowHeight(windowHeight),
-        rect(0, 0, cellWidth, cellHeight),
         window(nullptr, SDL_DestroyWindow),
         renderer(nullptr, SDL_DestroyRenderer) {
+    rect = SDL_Rect{0, 0, cellWidth, cellHeight};
     window.reset(SDL_CreateWindow("Methuselah", SDL_WINDOWPOS_UNDEFINED,
                                   SDL_WINDOWPOS_UNDEFINED, windowWidth,
                                   windowHeight, 0));
@@ -67,26 +67,28 @@ class GridRenderer2D : public GridRenderer<T> {
         rect.x = j * cellWidth;
         coord[0] = j;
 
-        auto value = grid.getValue(coord);
+        auto value = grid->getValue(coord);
         if (value) {
-          SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+          SDL_SetRenderDrawColor(renderer.get(), 255, 255, 255, 255);
         } else {
-          SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+          SDL_SetRenderDrawColor(renderer.get(), 0, 0, 0, 255);
         }
-        SDL_RenderFillRect(renderer, &rect);
+        SDL_RenderFillRect(renderer.get(), &rect);
       }
     }
+
+    SDL_RenderPresent(renderer.get());
   }
 
   using GridRenderer<T>::grid;
   using GridRenderer<T>::rect;
-  using GridRenderer<T>::gridHeight;
-  using GridRenderer<T>::gridWidth;
   using GridRenderer<T>::renderer;
   using GridRenderer<T>::cellWidth;
   using GridRenderer<T>::cellHeight;
 
   private:
   std::vector<size_t> coord;
+  uint16_t gridWidth;
+  uint16_t gridHeight;
 };
 }  // namespace methuselah
