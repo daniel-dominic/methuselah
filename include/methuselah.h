@@ -144,7 +144,7 @@ class Grid {
   Grid(const std::vector<size_t>& shape, Wrapping wrapping,
        Neighborhood neighborhood,
        std::function<void(T*, const std::vector<T*>&)> cellUpdate,
-       T defaultValue, unsigned short int maxNeighborDistance = 1)
+       T defaultValue = T(), unsigned short int maxNeighborDistance = 1)
       // TODO: If neighborhood is const, should determine maxNeighborDistance
       // based on the neighborhood provided
       : shape(shape),

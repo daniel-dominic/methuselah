@@ -3,6 +3,7 @@
 #include <SDL2/SDL.h>
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 
 #include "methuselah.h"
@@ -45,10 +46,14 @@ class GridRenderer {
 template <typename T>
 class GridRenderer2D : public GridRenderer<T> {
  public:
-  GridRenderer2D(std::shared_ptr<Grid<T>> grid, uint16_t cellWidth,
-                 uint16_t cellHeight, uint16_t windowWidth,
-                 uint16_t windowHeight)
-      : GridRenderer<T>(grid, cellWidth, cellHeight, windowWidth,
+  GridRenderer2D(
+      std::shared_ptr<Grid<T>> grid,
+      std::function<std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>(const T&)>
+          colorize,
+      uint16_t cellWidth, uint16_t cellHeight, uint16_t windowWidth,
+      uint16_t windowHeight)
+      : colorize(colorize),
+        GridRenderer<T>(grid, cellWidth, cellHeight, windowWidth,
                         windowHeight) {
     auto shape = grid->getShape();
     gridWidth = shape[0];
@@ -68,11 +73,12 @@ class GridRenderer2D : public GridRenderer<T> {
         coord[0] = j;
 
         auto value = grid->getValue(coord);
-        if (value) {
-          SDL_SetRenderDrawColor(renderer.get(), 255, 255, 255, 255);
-        } else {
-          SDL_SetRenderDrawColor(renderer.get(), 0, 0, 0, 255);
-        }
+        auto color = colorize(value);
+        auto r = std::get<0>(color);
+        auto g = std::get<1>(color);
+        auto b = std::get<2>(color);
+        auto a = std::get<3>(color);
+        SDL_SetRenderDrawColor(renderer.get(), r, g, b, a);
         SDL_RenderFillRect(renderer.get(), &rect);
       }
     }
@@ -86,7 +92,9 @@ class GridRenderer2D : public GridRenderer<T> {
   using GridRenderer<T>::cellWidth;
   using GridRenderer<T>::cellHeight;
 
-  private:
+ private:
+  std::function<std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>(const T&)>
+      colorize;
   std::vector<size_t> coord;
   uint16_t gridWidth;
   uint16_t gridHeight;

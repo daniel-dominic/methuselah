@@ -44,18 +44,25 @@ void randomize(Grid<bool>& grid, unsigned short mod = 10) {
   }
 }
 
+std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> colorize(const bool& alive) {
+  if (alive) {
+    return {255, 255, 255, 255};
+  } else {
+    return {0, 0, 0, 255};
+  }
+}
+
 int main() {
   {
-    auto grid = std::shared_ptr<Grid<bool>>(new Grid<bool>{
-        {GRID_WIDTH, GRID_HEIGHT},
-        Wrapping::BOUNDED,
-        Neighborhood::MOORE,
-        lifeUpdate,
-        false});
+    auto grid =
+        std::shared_ptr<Grid<bool>>(new Grid<bool>{{GRID_WIDTH, GRID_HEIGHT},
+                                                   Wrapping::BOUNDED,
+                                                   Neighborhood::MOORE,
+                                                   lifeUpdate});
     randomize(*grid);
 
-    GridRenderer2D<bool> renderer{grid, CELL_SIZE, CELL_SIZE, WINDOW_WIDTH,
-                                  WINDOW_HEIGHT};
+    GridRenderer2D<bool> renderer{grid,      colorize,     CELL_SIZE,
+                                  CELL_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT};
     EventHandler eventHandler;
     eventHandler.registerKeyDownAction(SDLK_r, [&]() { randomize(*grid); });
 
