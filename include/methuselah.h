@@ -131,6 +131,11 @@ std::vector<std::vector<int>> generateMooreOffsets(size_t numDimensions,
   }
   return offsets;
 }
+
+// TODO: Von Neumann offsets
+// NOTE: I think you can just take the Moore offsets, and remove all of
+//       those whose sum of absolute values is greater than 1.
+
 }  // namespace
 
 template <typename T>
