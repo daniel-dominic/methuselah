@@ -8,13 +8,13 @@
 
 using namespace methuselah;
 
-constexpr unsigned int CELL_SIZE = 2;
+constexpr unsigned int CELL_SIZE = 10;
 
-constexpr bool USE_DELAY = false;
-constexpr unsigned int DELAY = 50;
+constexpr bool USE_DELAY = true;
+constexpr unsigned int DELAY = 100;
 
-constexpr unsigned short int GRID_WIDTH = 600;
-constexpr unsigned short int GRID_HEIGHT = 400;
+constexpr unsigned short int GRID_WIDTH = 20;
+constexpr unsigned short int GRID_HEIGHT = 20;
 
 constexpr unsigned short int WINDOW_WIDTH = GRID_WIDTH * CELL_SIZE;
 constexpr unsigned short int WINDOW_HEIGHT = GRID_HEIGHT * CELL_SIZE;
@@ -32,7 +32,7 @@ void lifeUpdate(bool* cell, std::vector<bool*> neighbors) {
   }
 }
 
-void randomize(Grid<bool>& grid, unsigned short mod = 10) {
+void randomize(Grid<bool>& grid, unsigned short mod = 2) {
   srand(time(0));
   auto coord = std::vector<size_t>{0, 0};
   for (auto i = 0; i < GRID_HEIGHT; ++i) {
@@ -56,7 +56,7 @@ int main() {
   {
     auto grid =
         std::shared_ptr<Grid<bool>>(new Grid<bool>{{GRID_WIDTH, GRID_HEIGHT},
-                                                   Wrapping::BOUNDED,
+                                                   Wrapping::TOROIDAL,
                                                    Neighborhood::MOORE,
                                                    lifeUpdate});
     randomize(*grid);
@@ -72,6 +72,9 @@ int main() {
       grid->update();
       renderer.render();
       running = !eventHandler.receivedQuitSignal();
+      if (USE_DELAY) {
+        SDL_Delay(DELAY);
+      }
     }
   }
 

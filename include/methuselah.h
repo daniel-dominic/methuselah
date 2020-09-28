@@ -32,14 +32,17 @@ class InvalidOperationException : public std::runtime_error {
 template <typename T>
 class Cell {
  public:
-  Cell(const T& val)
+  Cell(const T& val, std::vector<size_t> coordinate)
       : value(std::make_unique<T>(val)),
-        futureValue(std::make_unique<T>(val)) {}
-  Cell() {}
+        futureValue(std::make_unique<T>(val)),
+        coordinate(coordinate) {}
+  Cell(std::vector<size_t> coordinate) : coordinate(coordinate) {}
 
   virtual T* get() { return value.get(); }
   virtual T* getFuture() { return futureValue.get(); }
   virtual bool isOutOfBounds() { return false; }
+  
+  std::vector<size_t> getCoordinate() { return coordinate; }
 
   virtual void set(const T& val) {
     *value = val;
@@ -53,13 +56,16 @@ class Cell {
  private:
   std::unique_ptr<T> value;
   std::unique_ptr<T> futureValue;
+  std::vector<size_t> const coordinate;
 };
 
 template <typename T>
 class OutOfBoundsCell final : public Cell<T> {
  public:
-  OutOfBoundsCell(T* ptr) : ptr(ptr) {}
-  OutOfBoundsCell() : ptr(nullptr) {}
+  OutOfBoundsCell(T* ptr, std::vector<size_t> coordinate)
+      : ptr(ptr), Cell<T>(coordinate) {}
+  OutOfBoundsCell(std::vector<size_t> coordinate)
+      : ptr(nullptr), Cell<T>(coordinate) {}
 
   T* get() { return ptr; }
   T* getFuture() {
@@ -107,7 +113,7 @@ size_t determinePadding(const std::vector<size_t>& shape) {
 }
 
 std::vector<std::vector<int>> generateMooreOffsets(size_t numDimensions,
-                                              bool isLastDim = true) {
+                                                   bool isLastDim = true) {
   if (numDimensions == 0) {
     return {};
   }
@@ -162,9 +168,10 @@ class Grid {
     auto coordinate = allZeros(numDimensions);
     for (auto i = 0; i < size + padding; ++i) {
       if (isOutOfBounds(coordinate)) {
-        cells.push_back(std::unique_ptr<Cell<T>>(new OutOfBoundsCell<T>()));
+        cells.push_back(
+            std::unique_ptr<Cell<T>>(new OutOfBoundsCell<T>(coordinate)));
       } else {
-        cells.push_back(std::make_unique<Cell<T>>(defaultValue));
+        cells.push_back(std::make_unique<Cell<T>>(defaultValue, coordinate));
       }
       incrementCoordinate(coordinate);
     }
@@ -179,7 +186,19 @@ class Grid {
             break;
 
           case Wrapping::TOROIDAL:
-            throw NotImplementedException();
+            auto coord = oobCell->getCoordinate();
+            for (auto i = 0; i < numDimensions; ++i) {
+              auto x = coord[i];
+              if (x < maxNeighborDistance) {
+                x += shape[i];
+              }
+              else if (x > shape[i]) {
+                x %= shape[i];
+              }
+              coord[i] = x;
+            }
+            auto idx = getIdx(coord, false);
+            oobCell->set(getCell(idx)->get());
             break;
         }
       }
@@ -280,14 +299,17 @@ class Grid {
 
   size_t getRealDimSize(size_t idx) { return shape[idx] + singleDimPadding; }
 
-  size_t getIdx(const std::vector<size_t>& coordinates) {
+  size_t getIdx(const std::vector<size_t>& coordinates, bool offsetPadding = true) {
     if (coordinates.size() != numDimensions)
       throw InvalidOperationException(
           "Coordinate numDimensions do not match grid's numDimensions.");
 
     size_t result{0};
     for (auto i = 0; i < numDimensions; ++i) {
-      auto chunk = coordinates[i] + maxNeighborDistance;
+      auto chunk = coordinates[i];
+      if (offsetPadding) {
+        chunk += maxNeighborDistance;
+      }
       for (auto j = 1; j <= i; ++j) {
         chunk *= getRealDimSize(j - 1);
       }
@@ -338,7 +360,6 @@ class Grid {
     }
     return false;
   }
-  
 };
 
 }  // namespace methuselah
