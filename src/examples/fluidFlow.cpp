@@ -139,8 +139,8 @@ void randomize(Grid<FluidCell>& grid) {
     coord[1] = i;
     for (auto j = 0; j < GRID_WIDTH; ++j) {
       coord[0] = j;
-      double xv = j * .15 + i * 0.075;
-      double yv = j * 0.05 + i * 0.60;
+      double xv = j * .0015 + i * 0.075;
+      double yv = j * 0.05 + i * 0.060;
       grid.setValue(coord, FluidCell{xv, yv, (uint8_t)(rand() % 255)});
     }
   }
@@ -153,7 +153,7 @@ int main() {
   {
     auto grid = std::shared_ptr<Grid<FluidCell>>(
         new Grid<FluidCell>{{GRID_WIDTH, GRID_HEIGHT},
-                            Wrapping::BOUNDED,
+                            Wrapping::TOROIDAL,
                             Neighborhood::MOORE,
                             update,
                             FluidCell{0.0, 0.0, 0}});
