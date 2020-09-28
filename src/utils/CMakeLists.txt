@@ -6,3 +6,4 @@ target_include_directories(Utils INTERFACE
   "."
   "${SDL2_INCLUDE_DIRS}"
   "${METHUSALAH_INCLUDE_DIR}")
+target_compile_features(Utils INTERFACE cxx_std_17)
