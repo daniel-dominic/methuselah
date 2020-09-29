@@ -15,17 +15,17 @@ constexpr unsigned int CELL_HEIGHT = 16;
 constexpr bool USE_DELAY = false;
 constexpr unsigned int DELAY = 500;
 
-constexpr unsigned short int SCALE = 1;
+constexpr unsigned short int SCALE = 2;
 
-constexpr unsigned short int ORIGIN_X = 40;
-constexpr unsigned short int ORIGIN_Y = 0;
-
-constexpr unsigned short int GRID_WIDTH = 80;
-constexpr unsigned short int GRID_HEIGHT = 80;
+constexpr unsigned short int GRID_WIDTH = 10;
+constexpr unsigned short int GRID_HEIGHT = 10;
 constexpr unsigned short int GRID_DEPTH = 3;
 
-constexpr unsigned short int WINDOW_WIDTH = 1000;
-constexpr unsigned short int WINDOW_HEIGHT = 800;
+constexpr int ORIGIN_X = GRID_WIDTH / 2;
+constexpr int ORIGIN_Y = (GRID_DEPTH - 1) / 2;
+
+constexpr unsigned short int WINDOW_WIDTH = ((GRID_WIDTH + 1) * CELL_WIDTH) * SCALE;
+constexpr unsigned short int WINDOW_HEIGHT = (((GRID_HEIGHT / 2) + (GRID_DEPTH - 1)) * CELL_HEIGHT) * SCALE;
 
 void lifeUpdate(bool* cell, std::vector<bool*> neighbors) {
   auto numNeighbors = 0;

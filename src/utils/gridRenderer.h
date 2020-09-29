@@ -177,9 +177,7 @@ class IsometricSpriteRenderer : public GridRenderer<T> {
  private:
   SDL_Rect toDestRect(int x, int y, int z) {
     return {((originX * cellWidth) + (x - y) * (cellWidth / 2)) * scale,
-            ((originY * cellHeight) + (x + y) * (cellHeight / 4) -
-             (z * (cellHeight / 2))) *
-                scale,
+            ((originY * cellHeight) + (x + y) * (cellHeight / 4) - (z * (cellHeight / 2))) * scale,
             cellWidth * scale, cellHeight * scale};
   }
 
