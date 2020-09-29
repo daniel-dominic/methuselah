@@ -4,6 +4,7 @@ project(Methuselah)
 
 option(METHUSALAH_BuildExamples "Build the example targets." ON)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 set(METHUSALAH_TARGET_NAME "Methuselah")
 set(METHUSALAH_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
 
