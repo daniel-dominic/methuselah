@@ -33,10 +33,10 @@ void lifeUpdate(bool* cell, std::vector<bool*> neighbors) {
     numNeighbors += *neighbor;
   }
   auto alive = *cell;
-  // if (alive && numNeighbors == 3) {
-  //   *cell = false;
-  // }
-  if (!alive && numNeighbors == 2) {
+  if (alive && (numNeighbors == 0 || numNeighbors > 2)) {
+    *cell = false;
+  }
+  else if (!alive && (numNeighbors == 2 || numNeighbors == 4)) {
     *cell = true;
   }
 }
@@ -77,18 +77,7 @@ int main() {
 
     grid->setValue({0,0,0}, true);
     grid->setValue({1,0,0}, true);
-    // grid->setValue({2,3,0}, true);
-    // grid->setValue({3,3,0}, true);
-
-    // grid->setValue({0,2,1}, true);
-    // grid->setValue({1,2,1}, true);
-    // grid->setValue({2,2,1}, true);
-    // grid->setValue({3,2,1}, true);
-
-    // grid->setValue({0,1,2}, true);
-    // grid->setValue({1,1,2}, true);
-    // grid->setValue({2,1,2}, true);
-    // grid->setValue({3,1,2}, true);
+    grid->setValue({2,0,0}, true);
 
     IsometricSpriteRenderer<bool> renderer{
         grid,        mapper,       "data/isometric.png", CELL_WIDTH,
@@ -98,17 +87,19 @@ int main() {
     EventHandler eventHandler;
     eventHandler.registerKeyDownAction(SDLK_r, [&]() { randomize(*grid); });
     
-    auto paused = false;
+    auto paused = true;
     eventHandler.registerKeyDownAction(SDLK_p, [&]() { paused ^= true; });
 
-    auto z = 3;
+    auto oneStep = true;
+    eventHandler.registerKeyDownAction(SDLK_SPACE, [&]() { oneStep = true; });
+
     eventHandler.registerKeyDownAction(SDLK_UP, [&]() { renderer.incrementRenderDepth(); });
     eventHandler.registerKeyDownAction(SDLK_DOWN, [&]() { renderer.decrementRenderDepth(); });
 
     auto running = true;
     while (running) {
       eventHandler.handleAll();
-      if (!paused) {
+      if (!paused || oneStep) {
         grid->update();
       }
       renderer.render();
@@ -116,6 +107,7 @@ int main() {
       if (USE_DELAY) {
         SDL_Delay(DELAY);
       }
+      oneStep = false;
     }
   }
 
