@@ -12,16 +12,16 @@ using namespace methuselah;
 constexpr unsigned int CELL_WIDTH = 16;
 constexpr unsigned int CELL_HEIGHT = 16;
 
-constexpr bool USE_DELAY = true;
+constexpr bool USE_DELAY = false;
 constexpr unsigned int DELAY = 500;
 
-constexpr unsigned short int SCALE = 3;
+constexpr unsigned short int SCALE = 1;
 
-constexpr unsigned short int ORIGIN_X = 10;
-constexpr unsigned short int ORIGIN_Y = 4;
+constexpr unsigned short int ORIGIN_X = 40;
+constexpr unsigned short int ORIGIN_Y = 0;
 
-constexpr unsigned short int GRID_WIDTH = 20;
-constexpr unsigned short int GRID_HEIGHT = 20;
+constexpr unsigned short int GRID_WIDTH = 80;
+constexpr unsigned short int GRID_HEIGHT = 80;
 constexpr unsigned short int GRID_DEPTH = 3;
 
 constexpr unsigned short int WINDOW_WIDTH = 1000;
@@ -58,9 +58,9 @@ void randomize(Grid<bool>& grid, unsigned short mod = 2) {
 }
 
 // TODO: Adjust Renderer so that this function receives coordinates
-SDL_Rect mapper(const bool& alive) {
+SDL_Rect mapper(const bool& alive, const std::vector<size_t>& coord) {
   if (alive) {
-    return {CELL_WIDTH * 2, 0, CELL_WIDTH, CELL_HEIGHT};
+    return {(int)(CELL_WIDTH * (2 + coord[2])), 0, CELL_WIDTH, CELL_HEIGHT};
   } else {
     return {0, 0, CELL_WIDTH, CELL_HEIGHT};
   }
@@ -76,7 +76,7 @@ int main() {
     //randomize(*grid);
 
     grid->setValue({0,0,0}, true);
-    grid->setValue({1,0,0}, true);
+    grid->setValue({1,1,0}, true);
     grid->setValue({2,0,0}, true);
 
     IsometricSpriteRenderer<bool> renderer{

@@ -106,7 +106,7 @@ template <typename T>
 class IsometricSpriteRenderer : public GridRenderer<T> {
  public:
   IsometricSpriteRenderer(std::shared_ptr<Grid<T>> grid,
-                          std::function<SDL_Rect(const T&)> mapper,
+                          std::function<SDL_Rect(const T&, std::vector<size_t>)> mapper,
                           std::string spritesheetPath, uint16_t cellWidth,
                           uint16_t cellHeight, uint16_t windowWidth,
                           uint16_t windowHeight, int originX, int originY,
@@ -144,10 +144,7 @@ class IsometricSpriteRenderer : public GridRenderer<T> {
         for (int x = 0; x < gridWidth; ++x) {
           coord[0] = x;
           auto dest = toDestRect(x, y, z);
-          auto src = mapper(grid->getValue(coord));
-          if (src.x != 0) {
-            src.x += 16 * z;
-          }
+          auto src = mapper(grid->getValue(coord), coord);
           SDL_RenderCopy(renderer.get(), spritesheet.get(), &src, &dest);
         }
       }
@@ -186,7 +183,7 @@ class IsometricSpriteRenderer : public GridRenderer<T> {
             cellWidth * scale, cellHeight * scale};
   }
 
-  std::function<SDL_Rect(const T&)> mapper;
+  std::function<SDL_Rect(const T&, std::vector<size_t>)> mapper;
   uint16_t scale;
   uint16_t gridWidth;
   uint16_t gridHeight;
