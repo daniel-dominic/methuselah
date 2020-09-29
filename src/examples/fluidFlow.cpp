@@ -159,7 +159,7 @@ int main() {
                             FluidCell{0.0, 0.0, 0}});
     randomize(*grid);
 
-    GridRenderer2D<FluidCell> renderer{grid,      colorize,     CELL_SIZE,
+    Ortho2DColorRenderer<FluidCell> renderer{grid,      colorize,     CELL_SIZE,
                                        CELL_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT};
     EventHandler eventHandler;
     eventHandler.registerKeyDownAction(SDLK_r, [&]() { randomize(*grid); });

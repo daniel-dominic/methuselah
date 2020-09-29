@@ -44,9 +44,9 @@ class GridRenderer {
 };
 
 template <typename T>
-class GridRenderer2D : public GridRenderer<T> {
+class Ortho2DColorRenderer : public GridRenderer<T> {
  public:
-  GridRenderer2D(
+  Ortho2DColorRenderer(
       std::shared_ptr<Grid<T>> grid,
       std::function<std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>(const T&)>
           colorize,
