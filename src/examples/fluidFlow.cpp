@@ -15,13 +15,13 @@ using methuselah::Neighborhood;
 using methuselah::Ortho2DColorRenderer;
 using methuselah::Wrapping;
 
-constexpr unsigned int CELL_SIZE = 12;
+constexpr unsigned int CELL_SIZE = 10;
 
-constexpr bool USE_DELAY = false;
-constexpr unsigned int DELAY = 500;
+constexpr bool USE_DELAY = true;
+constexpr unsigned int DELAY = 50;
 
 constexpr unsigned short int GRID_WIDTH = 50;
-constexpr unsigned short int GRID_HEIGHT = 50;
+constexpr unsigned short int GRID_HEIGHT = 40;
 
 constexpr unsigned short int WINDOW_WIDTH = GRID_WIDTH * CELL_SIZE;
 constexpr unsigned short int WINDOW_HEIGHT = GRID_HEIGHT * CELL_SIZE;
@@ -55,13 +55,14 @@ constexpr uint8_t NUM_NEIGHBORS = 8;
 
 struct Cell {
   bool water;
+  bool passable;
 };
 
 void update(Cell* cell, std::vector<Cell*> neighbors) {
-  if (!cell->water && neighbors[3]->water) {
+  if (!cell->water && neighbors[1]->water) {
     cell->water = true;
   }
-  else if(cell->water && !neighbors[3]->water) {
+  else if(cell->water && !neighbors[7]->water && neighbors[7]->passable) {
     cell->water = false;
   }
 
@@ -83,14 +84,14 @@ double randUnitInterval() { return (double)(rand()) / (double)(RAND_MAX); }
 
 bool randBool() { return rand() % 2 == 0; }
 
-void randomize(Grid<Cell>& grid) {
+void randomize(Grid<Cell>& grid, uint8_t mod = 10) {
   srand(time(0));
   auto coord = std::vector<size_t>{0, 0};
   for (auto i = 0; i < GRID_HEIGHT; ++i) {
     coord[1] = i;
     for (auto j = 0; j < GRID_WIDTH; ++j) {
       coord[0] = j;
-      grid.setValue(coord, Cell{(bool)(rand() % 2), (bool)(rand() % 2) });
+      grid.setValue(coord, Cell{(bool)(rand() % mod == 0), true});
     }
   }
 }
@@ -102,9 +103,10 @@ int main() {
   {
     auto grid =
         std::shared_ptr<Grid<Cell>>(new Grid<Cell>{{GRID_WIDTH, GRID_HEIGHT},
-                                                   Wrapping::TOROIDAL,
+                                                   Wrapping::BOUNDED,
                                                    Neighborhood::MOORE,
-                                                   update});
+                                                   update,
+                                                   Cell{false, false}});
     randomize(*grid);
 
     Ortho2DColorRenderer<Cell> renderer{grid,      colorize,     CELL_SIZE,

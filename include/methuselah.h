@@ -340,6 +340,7 @@ class Grid {
     for (const auto& coord : offsets) {
       neighborhood.push_back(getOffsetIdx(coord));
     }
+    std::sort(neighborhood.begin(), neighborhood.end());
     return neighborhood;
   }
 
