@@ -54,56 +54,25 @@ double cosineSimilarity(std::vector<double> vectorA,
 constexpr uint8_t NUM_NEIGHBORS = 8;
 
 struct Cell {
-  Cell(uint8_t fluid, bool passable) : fluid(fluid), passable(passable) {
-    fluidOutput.resize(NUM_NEIGHBORS);
-  }
-  Cell(uint8_t fluid) : Cell(fluid, true) {}
-  Cell() : Cell(0, true) {}
-
-  Cell(const Cell& other) {
-    fluid = other.fluid;
-    passable = other.passable;
-    fluidOutput.resize(NUM_NEIGHBORS);
-    for (auto i = 0; i < NUM_NEIGHBORS; ++i) {
-      fluidOutput[i] = other.fluidOutput[i];
-    }
-  }
-
-  Cell& operator=(const Cell& other) {
-    fluid = other.fluid;
-    passable = other.passable;
-    fluidOutput.resize(NUM_NEIGHBORS);
-    for (auto i = 0; i < NUM_NEIGHBORS; ++i) {
-      fluidOutput[i] = other.fluidOutput[i];
-    }
-    return *this;
-  }
-
-  uint8_t fluid;
-  std::vector<uint8_t> fluidOutput;
-  bool passable;
+  bool water;
 };
 
 void update(Cell* cell, std::vector<Cell*> neighbors) {
-  std::fill(cell->fluidOutput.begin(), cell->fluidOutput.end(), 0);
-  
-  // Gain
-  for (auto i = 0; i < NUM_NEIGHBORS; ++i) {
-    auto movement = neighbors[i]->fluidOutput[i];
-    cell->fluid = std::min(255, movement + cell->fluid);
+  if (!cell->water && neighbors[3]->water) {
+    cell->water = true;
+  }
+  else if(cell->water && !neighbors[3]->water) {
+    cell->water = false;
   }
 
   // Loss
-  for (auto i = NUM_NEIGHBORS - 3; cell->fluid && i < NUM_NEIGHBORS; ++i) {
-    cell->fluidOutput[NUM_NEIGHBORS - i] = 5;
-    cell->fluid -= 5;
-  }
 }
 
 std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> colorize(const Cell& cell) {
-  auto r = cell.fluid;
-  auto g = cell.fluid;
-  auto b = cell.fluid;
+  uint8_t r{0},g{0},b{0};
+  if (cell.water) {
+    r,g,b = 255,255,255;
+  }
   return {r, g, b, 255};
 }
 
@@ -121,7 +90,7 @@ void randomize(Grid<Cell>& grid) {
     coord[1] = i;
     for (auto j = 0; j < GRID_WIDTH; ++j) {
       coord[0] = j;
-      grid.setValue(coord, Cell{(uint8_t)(rand() % 255)});
+      grid.setValue(coord, Cell{(bool)(rand() % 2), (bool)(rand() % 2) });
     }
   }
 }
@@ -143,15 +112,24 @@ int main() {
     EventHandler eventHandler;
     eventHandler.registerKeyDownAction(SDLK_r, [&]() { randomize(*grid); });
 
+    auto paused = true;
+    eventHandler.registerKeyDownAction(SDLK_p, [&]() { paused ^= true; });
+
+    auto oneStep = false;
+    eventHandler.registerKeyDownAction(SDLK_SPACE, [&]() { oneStep = true; });
+
     auto running = true;
     while (running) {
       eventHandler.handleAll();
-      grid->update();
+      if (!paused || oneStep) {
+        grid->update();
+      }
       renderer.render();
       running = !eventHandler.receivedQuitSignal();
       if (USE_DELAY) {
         SDL_Delay(DELAY);
       }
+      oneStep = false;
     }
   }
 
