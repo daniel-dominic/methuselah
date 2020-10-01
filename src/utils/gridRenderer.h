@@ -145,6 +145,9 @@ class IsometricSpriteRenderer : public GridRenderer<T> {
           coord[0] = x;
           auto dest = toDestRect(x, y, z);
           auto src = mapper(grid->getValue(coord), coord);
+
+          auto colorShift = (uint8_t)(((z+5)/(gridDepth + 5.0))*255);
+          SDL_SetTextureColorMod(spritesheet.get(), colorShift, colorShift, colorShift);
           SDL_RenderCopy(renderer.get(), spritesheet.get(), &src, &dest);
         }
       }
