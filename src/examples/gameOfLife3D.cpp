@@ -33,15 +33,15 @@ void lifeUpdate(bool* cell, std::vector<bool*> neighbors) {
     numNeighbors += *neighbor;
   }
   auto alive = *cell;
-  if (alive && (numNeighbors == 0 || numNeighbors > 2)) {
+  if (alive && (numNeighbors != 5 || numNeighbors != 2)) {
     *cell = false;
   }
-  else if (!alive && (numNeighbors == 2 || numNeighbors == 4)) {
+  else if (!alive && (numNeighbors == 6)) {
     *cell = true;
   }
 }
 
-void randomize(Grid<bool>& grid, unsigned short mod = 2) {
+void randomize(Grid<bool>& grid, unsigned short mod = 12) {
   srand(time(0));
   auto coord = std::vector<size_t>{0, 0, 0};
   for (auto i = 0; i < GRID_DEPTH; ++i) {
@@ -51,7 +51,10 @@ void randomize(Grid<bool>& grid, unsigned short mod = 2) {
       for (auto k = 0; k < GRID_WIDTH; ++k) {
         coord[0] = k;
 
-        grid.setValue(coord, rand() % mod == 0);
+        auto v = rand() % mod == 0;
+        if (v) {
+          grid.setValue(coord, v);
+        }
       }
     }
   }
@@ -70,14 +73,25 @@ int main() {
   {
     auto grid = std::shared_ptr<Grid<bool>>(
         new Grid<bool>{{GRID_WIDTH, GRID_HEIGHT, GRID_DEPTH},
-                       Wrapping::BOUNDED,
+                       Wrapping::TOROIDAL,
                        Neighborhood::MOORE,
                        lifeUpdate});
     //randomize(*grid);
 
     grid->setValue({0,0,0}, true);
+    grid->setValue({1,0,0}, true);
+
+    grid->setValue({0,1,0}, true);
     grid->setValue({1,1,0}, true);
-    grid->setValue({2,0,0}, true);
+
+    grid->setValue({0,2,0}, true);
+    grid->setValue({1,2,0}, true);
+
+    grid->setValue({0,2,1}, true);
+    grid->setValue({1,2,1}, true);
+
+    grid->setValue({0,1,2}, true);
+    grid->setValue({1,1,2}, true);
 
     IsometricSpriteRenderer<bool> renderer{
         grid,        mapper,       "data/isometric.png", CELL_WIDTH,
