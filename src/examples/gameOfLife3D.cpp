@@ -14,13 +14,13 @@ constexpr unsigned int CELL_WIDTH = 16;
 constexpr unsigned int CELL_HEIGHT = 16;
 
 constexpr bool USE_DELAY = true;
-constexpr unsigned int DELAY = 100;
+constexpr unsigned int DELAY = 50;
 
 constexpr unsigned short int SCALE = 2;
 
 constexpr unsigned short int GRID_WIDTH = 30;
 constexpr unsigned short int GRID_HEIGHT = 30;
-constexpr unsigned short int GRID_DEPTH = 9;
+constexpr unsigned short int GRID_DEPTH = 15;
 
 constexpr int ORIGIN_X = GRID_WIDTH / 2;
 constexpr int ORIGIN_Y = (GRID_DEPTH - 1) / 2;
