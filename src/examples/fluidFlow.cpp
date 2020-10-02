@@ -15,18 +15,20 @@ using methuselah::Neighborhood;
 using methuselah::Ortho2DColorRenderer;
 using methuselah::Wrapping;
 
-constexpr unsigned int CELL_SIZE = 4;
+using Color = std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>;
+
+constexpr unsigned int CELL_SIZE = 6;
 
 constexpr bool USE_DELAY = false;
 constexpr unsigned int DELAY = 20;
 
-constexpr unsigned short int GRID_WIDTH = 400;
-constexpr unsigned short int GRID_HEIGHT = 200;
+constexpr unsigned short int GRID_WIDTH = 200;
+constexpr unsigned short int GRID_HEIGHT = 150;
 
 constexpr unsigned short int WINDOW_WIDTH = GRID_WIDTH * CELL_SIZE;
 constexpr unsigned short int WINDOW_HEIGHT = GRID_HEIGHT * CELL_SIZE;
 
-constexpr uint8_t WATER_MAX = 15;
+constexpr uint8_t WATER_MAX = 255;
 
 // Helper Functions
 // ================
@@ -46,6 +48,31 @@ double cosineSimilarity(std::vector<double> vectorA,
   return dotProduct / (std::sqrt(normA) * std::sqrt(normB));
 }
 
+// pos in range [0, 1]
+//
+// Thanks to:
+// https://stackoverflow.com/questions/5960979/using-c-vectorinsert-to-add-to-end-of-vector
+Color gradient(double pos) {
+    //we want to normalize ratio so that it fits in to 6 regions
+    //where each region is 256 units long
+    int normalized = int(pos * 256 * 6);
+
+    //find the distance to the start of the closest region
+    uint8_t x = normalized % 256;
+
+    uint8_t red = 0, grn = 0, blu = 0;
+    switch(normalized / 256) {
+    case 0: red = 255;      grn = x;        blu = 0;       break;//red
+    case 1: red = 255 - x;  grn = 255;      blu = 0;       break;//yellow
+    case 2: red = 0;        grn = 255;      blu = x;       break;//green
+    case 3: red = 0;        grn = 255 - x;  blu = 255;     break;//cyan
+    case 4: red = x;        grn = 0;        blu = 255;     break;//blue
+    case 5: red = 255;      grn = 0;        blu = 255 - x; break;//magenta
+    }
+
+    return {red, grn, blu, 255};
+}
+
 // Fluid Flow
 // ==========
 constexpr uint8_t NUM_NEIGHBORS = 8;
@@ -56,37 +83,24 @@ struct Cell {
 };
 
 void update(Cell* cell, std::vector<Cell*> neighbors) {
-  for (auto i = 0; i < 3 && cell->water < WATER_MAX; ++i) {
+  auto sum = 0;
+  for (auto i = 0; i < 8 && cell->water < WATER_MAX; ++i) {
     if (neighbors[i]->water > cell->water) {
-      cell->water += 1;
-      return;
+      ++sum;
     }
   }
 
-  for (auto i = 5; i < 8; ++i) {
-    if (neighbors[i]->passable && neighbors[i]->water < cell->water &&
-        neighbors[i]->water < WATER_MAX) {
-      cell->water -= 1;
-      return;
-    }
+  if (sum > 2 && cell->water < WATER_MAX) {
+    ++cell->water;
+  }
+  else if (!sum && cell->water) {
+    --cell->water;
   }
 
-  // if (neighbors[1]->water > cell->water) {
-  //   cell->water += 1;
-  // } else if (neighbors[6]->water < cell->water && neighbors[6]->passable) {
-  //   cell->water -= 1;
-  // }
 }
 
-std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> colorize(const Cell& cell) {
-  uint8_t r{0}, g{0}, b{0};
-  if (cell.water) {
-    auto amt = 255 * (cell.water / (double)(WATER_MAX));
-    r = amt;
-    g = amt;
-    b = amt;
-  }
-  return {r, g, b, 255};
+Color colorize(const Cell& cell) {
+  return gradient(cell.water / (double)(WATER_MAX));
 }
 
 // Randomize
