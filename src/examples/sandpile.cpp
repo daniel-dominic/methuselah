@@ -20,52 +20,36 @@ constexpr unsigned int CELL_SIZE = 10;
 constexpr bool USE_DELAY = true;
 constexpr unsigned int DELAY = 50;
 
-constexpr unsigned short int GRID_WIDTH = 40;
-constexpr unsigned short int GRID_HEIGHT = 50;
+constexpr unsigned short int GRID_WIDTH = 60;
+constexpr unsigned short int GRID_HEIGHT = 80;
 
 constexpr unsigned short int WINDOW_WIDTH = GRID_WIDTH * CELL_SIZE;
 constexpr unsigned short int WINDOW_HEIGHT = GRID_HEIGHT * CELL_SIZE;
 
-// Helper Functions
-// ================
-double cosineSimilarity(std::vector<double> vectorA,
-                        std::vector<double> vectorB) {
-  double dotProduct = 0.0;
-  double normA = 0.0;
-  double normB = 0.0;
-  for (int i = 0; i < vectorA.size(); ++i) {
-    dotProduct += vectorA[i] * vectorB[i];
-    normA += std::pow(vectorA[i], 2);
-    normB += std::pow(vectorB[i], 2);
-  }
-  if (normA == 0 || normB == 0) {
-    return 0;
-  }
-  return dotProduct / (std::sqrt(normA) * std::sqrt(normB));
-}
-
 // Fluid Flow
 // ==========
-constexpr uint8_t NUM_NEIGHBORS = 8;
-
 struct Cell {
-  bool water;
+  bool sand;
   bool passable;
 };
 
 void update(Cell* cell, std::vector<Cell*> neighbors) {
-  if (!cell->water && neighbors[1]->water) {
-    cell->water = true;
-  }
-  else if(cell->water && !neighbors[6]->water && neighbors[6]->passable) {
-    cell->water = false;
+  if (!cell->sand &&
+      (neighbors[0]->sand || neighbors[1]->sand || neighbors[2]->sand)) {
+    cell->sand = true;
+  } else if (cell->sand && ((!neighbors[5]->sand && neighbors[5]->passable) ||
+                            (!neighbors[6]->sand && neighbors[6]->passable) ||
+                            (!neighbors[7]->sand && neighbors[7]->passable))) {
+    cell->sand = false;
   }
 }
 
 std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> colorize(const Cell& cell) {
-  uint8_t r{0},g{0},b{0};
-  if (cell.water) {
-    r= 255; g = 255; b = 255;
+  uint8_t r{50}, g{50}, b{150};
+  if (cell.sand) {
+    r = 255;
+    g = 255;
+    b = 0;
   }
   return {r, g, b, 255};
 }
@@ -105,14 +89,11 @@ int main() {
     EventHandler eventHandler;
     eventHandler.registerKeyDownAction(SDLK_r, [&]() { randomize(*grid); });
 
-    auto paused = true;
+    auto paused = false;
     eventHandler.registerKeyDownAction(SDLK_p, [&]() { paused ^= true; });
 
     auto oneStep = false;
     eventHandler.registerKeyDownAction(SDLK_SPACE, [&]() { oneStep = true; });
-
-    eventHandler.registerMouseClickAction([&](int32_t x, int32_t y) { oneStep = true; });
-
 
     auto running = true;
     while (running) {

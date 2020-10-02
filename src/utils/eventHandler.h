@@ -18,7 +18,7 @@ class EventHandler {
         case SDL_QUIT:
           quitSignal = true;
           break;
-        case SDL_KEYDOWN:
+        case SDL_KEYDOWN: {
           if (e.key.keysym.sym == SDLK_ESCAPE) {
             quitSignal = true;
           }
@@ -26,7 +26,12 @@ class EventHandler {
           if (it != keyDownActions.end()) {
             it->second();
           }
-          break;
+        } break;
+        case SDL_MOUSEBUTTONDOWN: {
+          for (auto action : mouseClickActions) {
+            action(e.button.x, e.button.y);
+          }
+        } break;
       }
     }
   }
@@ -36,10 +41,15 @@ class EventHandler {
     keyDownActions.insert({keycode, action});
   }
 
+  void registerMouseClickAction(std::function<void(int32_t, int32_t)> action) {
+    mouseClickActions.push_back(action);
+  }
+
   bool receivedQuitSignal() const { return quitSignal; }
 
  private:
   std::unordered_map<SDL_Keycode, std::function<void()>> keyDownActions;
+  std::vector<std::function<void(int32_t, int32_t)>> mouseClickActions;
   bool quitSignal;
 };
 
