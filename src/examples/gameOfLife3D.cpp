@@ -62,12 +62,14 @@ void randomize(Grid<bool>& grid, unsigned short mod = 12) {
   }
 }
 
+int currentLevel = 0;
 SDL_Rect mapper(const bool& alive, const std::vector<size_t>& coord) {
   if (alive) {
-    return {2 * CELL_WIDTH, 0, CELL_WIDTH, CELL_HEIGHT};
-  } else {
-    return {0, 0, CELL_WIDTH, CELL_HEIGHT};
+    return {3 * CELL_WIDTH, 0, CELL_WIDTH, CELL_HEIGHT};
+  } else if (coord[2] == currentLevel) {
+    return {CELL_WIDTH, 0, CELL_WIDTH, CELL_HEIGHT};
   }
+  return {0, 0, CELL_WIDTH, CELL_HEIGHT};
 }
 
 void drawGlider_S56B2(std::shared_ptr<Grid<bool>> grid, size_t x, size_t y,
@@ -95,9 +97,7 @@ int main() {
                        Wrapping::TOROIDAL,
                        Neighborhood::MOORE,
                        lifeUpdate});
-
-    drawGlider_S56B2(grid, 4, 1, 3);
-    drawGlider_S56B2(grid, 8, 5, 3);
+    randomize(*grid);
 
     IsometricSpriteRenderer<bool> renderer{
         grid,        mapper,       "data/isometric.png", CELL_WIDTH,
@@ -127,6 +127,9 @@ int main() {
         SDLK_UP, [&]() { renderer.incrementRenderDepth(); });
     eventHandler.registerKeyDownAction(
         SDLK_DOWN, [&]() { renderer.decrementRenderDepth(); });
+
+    eventHandler.registerKeyDownAction(SDLK_RIGHT, [&]() { currentLevel++; });
+    eventHandler.registerKeyDownAction(SDLK_LEFT, [&]() { currentLevel--; });
 
     auto running = true;
     while (running) {
