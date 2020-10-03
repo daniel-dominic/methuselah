@@ -126,7 +126,6 @@ int main() {
     auto oneStep = false;
     eventHandler.registerKeyDownAction(SDLK_SPACE, [&]() { oneStep = true; });
 
-
     eventHandler.registerMouseClickAction([&](int32_t x, int32_t y) {
       size_t cellX = x / CELL_SIZE;
       size_t cellY = y / CELL_SIZE;

@@ -62,7 +62,7 @@ int main() {
     randomize(*grid);
 
     Ortho2DColorRenderer<bool> renderer{grid,      colorize,     CELL_SIZE,
-                                  CELL_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT};
+                                        CELL_SIZE, WINDOW_WIDTH, WINDOW_HEIGHT};
     EventHandler eventHandler;
     eventHandler.registerKeyDownAction(SDLK_r, [&]() { randomize(*grid); });
 
