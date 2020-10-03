@@ -5,6 +5,7 @@
 
 #include <algorithm>
 
+#include "color.h"
 #include "eventHandler.h"
 #include "gridRenderer.h"
 #include "methuselah.h"
@@ -15,20 +16,18 @@ using methuselah::Neighborhood;
 using methuselah::Ortho2DColorRenderer;
 using methuselah::Wrapping;
 
-using Color = std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>;
+constexpr unsigned int CELL_SIZE = 20;
 
-constexpr unsigned int CELL_SIZE = 6;
+constexpr bool USE_DELAY = true;
+constexpr unsigned int DELAY = 100;
 
-constexpr bool USE_DELAY = false;
-constexpr unsigned int DELAY = 20;
-
-constexpr unsigned short int GRID_WIDTH = 200;
-constexpr unsigned short int GRID_HEIGHT = 150;
+constexpr unsigned short int GRID_WIDTH = 30;
+constexpr unsigned short int GRID_HEIGHT = 30;
 
 constexpr unsigned short int WINDOW_WIDTH = GRID_WIDTH * CELL_SIZE;
 constexpr unsigned short int WINDOW_HEIGHT = GRID_HEIGHT * CELL_SIZE;
 
-constexpr uint8_t WATER_MAX = 255;
+constexpr uint8_t WATER_MAX = 7;
 
 // Helper Functions
 // ================
@@ -46,31 +45,6 @@ double cosineSimilarity(std::vector<double> vectorA,
     return 0;
   }
   return dotProduct / (std::sqrt(normA) * std::sqrt(normB));
-}
-
-// pos in range [0, 1]
-//
-// Thanks to:
-// https://stackoverflow.com/questions/5960979/using-c-vectorinsert-to-add-to-end-of-vector
-Color gradient(double pos) {
-    //we want to normalize ratio so that it fits in to 6 regions
-    //where each region is 256 units long
-    int normalized = int(pos * 256 * 6);
-
-    //find the distance to the start of the closest region
-    uint8_t x = normalized % 256;
-
-    uint8_t red = 0, grn = 0, blu = 0;
-    switch(normalized / 256) {
-    case 0: red = 255;      grn = x;        blu = 0;       break;//red
-    case 1: red = 255 - x;  grn = 255;      blu = 0;       break;//yellow
-    case 2: red = 0;        grn = 255;      blu = x;       break;//green
-    case 3: red = 0;        grn = 255 - x;  blu = 255;     break;//cyan
-    case 4: red = x;        grn = 0;        blu = 255;     break;//blue
-    case 5: red = 255;      grn = 0;        blu = 255 - x; break;//magenta
-    }
-
-    return {red, grn, blu, 255};
 }
 
 // Fluid Flow
@@ -91,22 +65,19 @@ void update(Cell* cell, std::vector<Cell*> neighbors) {
       }
     }
 
-    if (sum > 2 && cell->water < WATER_MAX) {
+    if (sum && cell->water < WATER_MAX) {
       ++cell->water;
-    }
-    else if (!sum && cell->water) {
+    } else if (!sum && cell->water) {
       --cell->water;
     }
   }
-
 }
 
 Color colorize(const Cell& cell) {
-  //return gradient(cell.water / (double)(WATER_MAX));
-  if (!cell.passable)
-    return {100,150,100,255};
-  auto x = (uint8_t)(255 - (cell.water / (double)(WATER_MAX))*255);
-  return {x,x,x,255};
+  // return gradient(cell.water / (double)(WATER_MAX));
+  if (!cell.passable) return {100, 255, 100, 255};
+  auto x = (uint8_t)(255 - (cell.water / (double)(WATER_MAX)) * 255);
+  return {x, x, 255, 255};
 }
 
 // Randomize
@@ -114,17 +85,17 @@ Color colorize(const Cell& cell) {
 
 double randUnitInterval() { return (double)(rand()) / (double)(RAND_MAX); }
 
-void randomize(Grid<Cell>& grid, uint8_t mod = WATER_MAX) {
-  srand(time(0)*100);
+void randomize(Grid<Cell>& grid, uint8_t mod = WATER_MAX,
+               uint8_t immovableAmt = 0) {
+  srand(time(0) * 100);
   auto coord = std::vector<size_t>{0, 0};
   for (auto i = 0; i < GRID_HEIGHT; ++i) {
     coord[1] = i;
     for (auto j = 0; j < GRID_WIDTH; ++j) {
       coord[0] = j;
-      if (rand() % 100 < 30) {
+      if (rand() % 100 < immovableAmt) {
         grid.setValue(coord, Cell{0, false});
-      }
-      else {
+      } else {
         grid.setValue(coord, Cell{(uint8_t)(rand() % mod), true});
       }
     }
@@ -149,14 +120,19 @@ int main() {
     EventHandler eventHandler;
     eventHandler.registerKeyDownAction(SDLK_r, [&]() { randomize(*grid); });
 
-    auto paused = false;
+    auto paused = true;
     eventHandler.registerKeyDownAction(SDLK_p, [&]() { paused ^= true; });
 
     auto oneStep = false;
     eventHandler.registerKeyDownAction(SDLK_SPACE, [&]() { oneStep = true; });
 
-    eventHandler.registerMouseClickAction(
-        [&](int32_t x, int32_t y) { oneStep = true; });
+
+    eventHandler.registerMouseClickAction([&](int32_t x, int32_t y) {
+      size_t cellX = x / CELL_SIZE;
+      size_t cellY = y / CELL_SIZE;
+      bool passable = grid->getValue({cellX, cellY}).passable ^ true;
+      grid->setValue({cellX, cellY}, Cell{0, passable});
+    });
 
     auto running = true;
     while (running) {
