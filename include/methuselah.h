@@ -151,8 +151,6 @@ class Grid {
        Neighborhood neighborhood,
        std::function<void(T*, const std::vector<T*>&)> cellUpdate,
        T defaultValue = T(), unsigned short int maxNeighborDistance = 1)
-      // TODO: If neighborhood is const, should determine maxNeighborDistance
-      // based on the neighborhood provided
       : shape(shape),
         size(multiplyAll<size_t>(shape)),
         maxNeighborDistance(maxNeighborDistance),
@@ -163,7 +161,7 @@ class Grid {
         cellUpdate(cellUpdate),
         defaultValue(defaultValue),
         defaultCellValue(std::unique_ptr<T>(new T(defaultValue))) {
-    setNeighborhood(neighborhoodType);
+    setNeighborhood(neighborhood);
 
     auto coordinate = allZeros(numDimensions);
     for (auto i = 0; i < size + padding; ++i) {
