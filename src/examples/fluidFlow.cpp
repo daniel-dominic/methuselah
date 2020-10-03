@@ -84,23 +84,29 @@ struct Cell {
 
 void update(Cell* cell, std::vector<Cell*> neighbors) {
   auto sum = 0;
-  for (auto i = 0; i < 8 && cell->water < WATER_MAX; ++i) {
-    if (neighbors[i]->water > cell->water) {
-      ++sum;
+  if (cell->passable) {
+    for (auto i = 0; i < 8 && cell->water < WATER_MAX; ++i) {
+      if (neighbors[i]->passable && neighbors[i]->water > cell->water) {
+        ++sum;
+      }
     }
-  }
 
-  if (sum > 2 && cell->water < WATER_MAX) {
-    ++cell->water;
-  }
-  else if (!sum && cell->water) {
-    --cell->water;
+    if (sum > 2 && cell->water < WATER_MAX) {
+      ++cell->water;
+    }
+    else if (!sum && cell->water) {
+      --cell->water;
+    }
   }
 
 }
 
 Color colorize(const Cell& cell) {
-  return gradient(cell.water / (double)(WATER_MAX));
+  //return gradient(cell.water / (double)(WATER_MAX));
+  if (!cell.passable)
+    return {100,150,100,255};
+  auto x = (uint8_t)(255 - (cell.water / (double)(WATER_MAX))*255);
+  return {x,x,x,255};
 }
 
 // Randomize
@@ -115,7 +121,12 @@ void randomize(Grid<Cell>& grid, uint8_t mod = WATER_MAX) {
     coord[1] = i;
     for (auto j = 0; j < GRID_WIDTH; ++j) {
       coord[0] = j;
-      grid.setValue(coord, Cell{(uint8_t)(rand() % mod), true});
+      if (rand() % 100 < 30) {
+        grid.setValue(coord, Cell{0, false});
+      }
+      else {
+        grid.setValue(coord, Cell{(uint8_t)(rand() % mod), true});
+      }
     }
   }
 }
@@ -127,7 +138,7 @@ int main() {
   {
     auto grid =
         std::shared_ptr<Grid<Cell>>(new Grid<Cell>{{GRID_WIDTH, GRID_HEIGHT},
-                                                   Wrapping::BOUNDED,
+                                                   Wrapping::TOROIDAL,
                                                    Neighborhood::MOORE,
                                                    update,
                                                    Cell{0, false}});
